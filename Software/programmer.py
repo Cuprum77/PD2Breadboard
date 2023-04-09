@@ -12,6 +12,9 @@ timeout = 1
 reset_message = "reboot_to_bootloader"
 
 
+# Thanks https://github.com/diminDDL for assisting in development and testing on Linux
+
+
 import shutil
 import os
 import sys
@@ -69,9 +72,8 @@ def Scan_For_MassStorage(device_name):
     else:  # Linux
         # get all the connected devices
         for partition in psutil.disk_partitions():
-            print(partition)
             # check if the device name is in the partition device name
-            if partition.device == device_name:
+            if device_name in partition.mountpoint:
                 return True
             
         return False
