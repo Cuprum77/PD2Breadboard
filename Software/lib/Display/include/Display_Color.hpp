@@ -35,6 +35,9 @@ struct Color
     unsigned short g : 6;
     unsigned short b : 5;
 
+    /**
+     * @brief Creates a black color
+    */
     Color()
     {
         this->r = 0;
@@ -42,6 +45,10 @@ struct Color
         this->b = 0;
     }
 
+    /**
+     * @brief Creates a color from a 16 bit value
+     * @param color 16-bit color
+    */
     Color(unsigned short color)
     {
         this->r = (color >> 11) & 0x1F;
@@ -49,6 +56,11 @@ struct Color
         this->b = color & 0x1F;
     }
 
+    /**
+     * @brief Applies a multiplier to a 24-bit color
+     * @param color 24-bit color
+     * @param multiplier Multiplier (0-31)
+    */
     Color(Color color, unsigned short multiplier)
     {
         this->r = color.r * multiplier;
@@ -56,6 +68,11 @@ struct Color
         this->b = color.b * multiplier;
     }
 
+    /**
+     * @brief Applies a multiplier to a 16-bit color
+     * @param color 16-bit color
+     * @param multiplier Multiplier (0-31)
+    */
     Color(unsigned short color, unsigned short multiplier)
     {
         this->r = ((color >> 11) & 0x1F) * multiplier;
@@ -63,6 +80,12 @@ struct Color
         this->b = (color & 0x1F) * multiplier;
     }
 
+    /**
+     * @brief Creates a color from 3 values
+     * @param r Red value (5 bits)
+     * @param g Green value (6 bits)
+     * @param b Blue value (5 bits)
+    */
     Color(unsigned short r, unsigned short g, unsigned short b)
     {
         this->r = r;
@@ -70,8 +93,28 @@ struct Color
         this->b = b;
     }
 
+    /**
+     * @brief Returns the color as a 16 bit value
+     * @return 16-bit color
+    */
     unsigned short to16bit()
     {
         return (this->r << 11) | (this->g << 5) | this->b;
+    }
+
+    /**
+     * @brief Converts a 24-bit color to a 16-bit color
+     * @param color 24-bit color
+     * @return 16-bit color
+     */
+    Color hexToColor(unsigned int color)
+    {
+        unsigned char r = (color >> 16) & 0xFF;
+        unsigned char g = (color >> 8) & 0xFF;
+        unsigned char b = color & 0xFF;
+
+        this->r = r >> 3 & 0x1F;
+        this->g = g >> 2 & 0x3F;
+        this->b = b >> 3 & 0x1F;
     }
 };
