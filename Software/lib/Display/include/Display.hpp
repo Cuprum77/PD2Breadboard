@@ -28,19 +28,17 @@ public:
     void displayOn();
     void displayOff();
     void setCursor(Point Point);
+    Point getCenter();
 
     void fill(Color color);
     void drawPixel(Point Point, Color color);
-    void drawLine(Point start, Point end, 
-        Color color = Colors::White, uint thickness = 1);
-    void drawRectangle(Point start, Point end, 
-        Color color = Colors::White, uint thickness = 1);
-    void drawFilledRectangle(Point start, 
-        Point end, Color color = Colors::White);
-    void drawCircle(Point center, uint radius, 
-        Color color = Colors::White, uint thickness = 1);
-    void drawFilledCircle(Point center, 
-        uint radius, Color color = Colors::White);
+    void drawLine(Point start, Point end, Color color = Colors::White);
+    void drawRectangle(Point start, Point end, Color color = Colors::White);
+    void drawRectangle(Rectangle rect, Color color = Colors::White);
+    void drawRectangle(Point center, uint width, uint height, Color color = Colors::White);
+    void drawFilledRectangle(Point start, Point end, Color color = Colors::White);
+    void drawCircle(Point center, uint radius, Color color = Colors::White);
+    void drawFilledCircle(Point center, uint radius, Color color = Colors::White);
 
     void print(const char* text, Point Point, uint size);
     void print(double value, Point Point, uint size);

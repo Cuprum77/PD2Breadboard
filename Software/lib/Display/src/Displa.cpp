@@ -160,6 +160,19 @@ void Display::setCursor(Point Point)
     );
 }
 
+/**
+ * @brief Get the center of the display
+ * @return Point The center of the display
+*/
+Point Display::getCenter()
+{
+    Point Point = {
+        this->params.width / 2,
+        this->params.height / 2
+    };
+    return Point;
+}
+
 
 /**
  * @brief Fill the display with a color
@@ -207,7 +220,7 @@ void Display::drawPixel(Point Point, Color color)
  * @param color Color to draw in
  * @param thickness Thickness of the line
 */
-void Display::drawLine(Point start, Point end, Color color, uint thickness)
+void Display::drawLine(Point start, Point end, Color color)
 {
     // Uses Bresenham's line algorithm
     // https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm
@@ -228,23 +241,8 @@ void Display::drawLine(Point start, Point end, Color color, uint thickness)
     
     while(true)
     {
-        // draw the pixel and the ones around it as defined by the thickness value
-        if(thickness > 1)
-        {
-            // loop through the thickness
-            for(int i = 0; i < thickness; i++)
-            {
-                // calculate the y Point
-                uint yThicc = y0 + i - (thickness / 2);
-                // draw the pixel
-                this->drawPixel({x0, yThicc}, color);
-            }
-        }
-        else
-        {
-            // draw the pixel
-            this->drawPixel({x0, y0}, color);
-        }
+        // draw the pixel
+        this->drawPixel({x0, y0}, color);
 
         // if we have reached the end Point, break
         if(x0 == x1 && y0 == y1) break;
@@ -279,16 +277,46 @@ void Display::drawLine(Point start, Point end, Color color, uint thickness)
  * @param color Color to draw in
  * @param thickness Thickness of the line
 */
-void Display::drawRectangle(Point start, Point end, Color color, uint thickness)
+void Display::drawRectangle(Point start, Point end, Color color)
 {
-    // draw the top line
-    this->drawLine({start.x, start.y}, {end.x, start.y}, color, thickness);
-    // draw the right line
-    this->drawLine({end.x, start.y}, {end.x, end.y}, color, thickness);
-    // draw the bottom line
-    this->drawLine({end.x, end.y}, {start.x, end.y}, color, thickness);
-    // draw the left line
-    this->drawLine({start.x, end.y}, {start.x, start.y}, color, thickness);
+    // draw the rectangle
+    this->drawLine({start.x, start.y}, {end.x, start.y}, color);
+    this->drawLine({end.x, start.y}, {end.x, end.y}, color);
+    this->drawLine({end.x, end.y}, {start.x, end.y}, color);
+    this->drawLine({start.x, end.y}, {start.x, start.y}, color);
+}
+
+/**
+ * @brief Draw a rectangle on the display
+ * @param rect Rectangle to draw
+ * @param color Color to draw in
+ * @param thickness Thickness of the line
+*/
+void Display::drawRectangle(Rectangle rect, Color color)
+{
+    // draw the rectangle
+    this->drawLine(rect.corner1, rect.corner2, color);
+    this->drawLine(rect.corner2, rect.corner3, color);
+    this->drawLine(rect.corner3, rect.corner4, color);
+    this->drawLine(rect.corner4, rect.corner1, color);
+}
+
+/**
+ * @brief Draw a center aligned rectangle on the display
+ * @param center Center Point
+ * @param width Width of the rectangle
+ * @param height Height of the rectangle
+ * @param color Color to draw in
+ * @param thickness Thickness of the line
+*/
+void Display::drawRectangle(Point center, uint width, uint height, Color color)
+{
+    // calculate the start and end Points
+    Point start = {center.x - (width / 2), center.y - (height / 2)};
+    Point end = {center.x + (width / 2), center.y + (height / 2)};
+
+    // draw the rectangle
+    this->drawRectangle(start, end, color);
 }
 
 /**
@@ -329,17 +357,17 @@ void Display::drawFilledRectangle(Point start, Point end, Color color)
  * @param radius Radius of the circle
  * @param color Color to draw in
 */
-void Display::drawCircle(Point center, uint radius, Color color, uint thickness)
+void Display::drawCircle(Point center, uint radius, Color color)
 {
     // Uses Bresenham's circle algorithm
     // https://en.wikipedia.org/wiki/Midpoint_circle_algorithm
 
     // move Points into local variables
-    uint x0 = center.x;
-    uint y0 = center.y;
-    uint x = radius;
-    uint y = 0;
-    uint error = 0;
+    int x0 = center.x;
+    int y0 = center.y;
+    int x = radius;
+    int y = 0;
+    int error = 3 - 2 * x;
 
     // loop through the radius
     while(x >= y)
@@ -354,16 +382,66 @@ void Display::drawCircle(Point center, uint radius, Color color, uint thickness)
         this->drawPixel({x0 + y, y0 - x}, color);
         this->drawPixel({x0 + x, y0 - y}, color);
 
-        // calculate the error
-        error = 2 * (y + 1) - 1;
-        // if the error is greater than the difference in y
+        // if the error is greater than 0
         if(error > 0)
         {
             // decrement the x Point
             x--;
             // calculate the error
-            error -= 2 * x;
+            error = error + 4 * (y - x) + 10;
         }
+        else
+        {
+            // calculate the error
+            error = error + 4 * y + 6;
+        }
+
+        // increment the y Point
+        y++;
+    }
+}
+
+/**
+ * @brief Draw a filled circle on the display
+ * @param center Center Point
+ * @param radius Radius of the circle
+ * @param color Color to draw in
+*/
+void Display::drawFilledCircle(Point center, uint radius, Color color)
+{
+    // Uses Bresenham's circle algorithm
+    // https://en.wikipedia.org/wiki/Midpoint_circle_algorithm
+
+    // move Points into local variables
+    int x0 = center.x;
+    int y0 = center.y;
+    int x = radius;
+    int y = 0;
+    int error = 3 - 2 * x;
+
+    // loop through the radius
+    while(x >= y)
+    {
+        // draw the pixel
+        this->drawLine({x0 + x, y0 + y}, {x0 - x, y0 + y}, color);
+        this->drawLine({x0 + y, y0 + x}, {x0 - y, y0 + x}, color);
+        this->drawLine({x0 + x, y0 - y}, {x0 - x, y0 - y}, color);
+        this->drawLine({x0 + y, y0 - x}, {x0 - y, y0 - x}, color);
+
+        // if the error is greater than 0
+        if(error > 0)
+        {
+            // decrement the x Point
+            x--;
+            // calculate the error
+            error = error + 4 * (y - x) + 10;
+        }
+        else
+        {
+            // calculate the error
+            error = error + 4 * y + 6;
+        }
+
         // increment the y Point
         y++;
     }

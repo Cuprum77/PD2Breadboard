@@ -330,69 +330,6 @@ void processUSBData()
 
 
 /**
- * @brief Button handler
- * @note Has to be called every loop
-*/
-void buttonHandler()
-{
-	if(buttonMenu.isLongPressed())
-	{
-		printf("MENU long pressed\n");
-	}
-	if(buttonMenu.isHeld())
-	{
-		gpio_put(LEFT_MOSFET_LED, 0);
-		gpio_put(LEFT_MOSFET, 0);
-		printf("MENU held\n");
-	}
-	if(buttonMenu.isClicked())
-	{
-		gpio_put(LEFT_MOSFET_LED, 1);
-		gpio_put(LEFT_MOSFET, 1);
-		printf("MENU\n");
-	}
-	if(buttonDown.isHeld())
-	{
-		printf("DOWN held\n");
-	}
-	if(buttonDown.isClicked())
-	{
-		printf("DOWN\n");
-	}
-	if(buttonUp.isHeld())
-	{
-		gpio_put(RIGHT_MOSFET_LED, 0);
-		gpio_put(RIGHT_MOSFET, 0);
-
-		printf("UP held\n");
-	}
-	if(buttonUp.isClicked())
-	{
-		gpio_put(RIGHT_MOSFET_LED, 1);
-		gpio_put(RIGHT_MOSFET, 1);
-
-		printf("UP\n");
-	}
-
-	buttonUp.update();
-	buttonMenu.update();
-	buttonDown.update();
-}
-
-unsigned long lastPolling = 0;
-/**
- * @brief Periodically poll the INA219 for data
- * @note Has to be called every loop
-*/
-void pollINA()
-{
-	if((time_us_32() - lastPolling) < 1000)
-		return;
-
-	ina219.getData(true);
-}
-
-/**
  * @brief Draw the Norwegian flag 
 */
 void drawNorwegianFlag()
@@ -427,7 +364,7 @@ void drawNorwegianFlag()
     end = {(uint)width, (uint)(horizontalUnit * 10)};
     display.drawFilledRectangle(Point(start, xOffset, yOffset), Point(end, xOffset, yOffset), hvit);
 	// draw the white horizontal stripe
-	start = {(uint)(verticalUnit * 6), 0};
+	start = {(uint)(verticalUnit * 6), (uint)0};
 	end = {(uint)(verticalUnit * 10), (uint)height};
 	display.drawFilledRectangle(Point(start, xOffset, yOffset), Point(end, xOffset, yOffset), hvit);
 
@@ -436,9 +373,75 @@ void drawNorwegianFlag()
     end = {(uint)width, (uint)(horizontalUnit * 9)};
     display.drawFilledRectangle(Point(start, xOffset, yOffset), Point(end, xOffset, yOffset), mørkeBlå);
 	// draw the blue horizontal stripe
-	start = {(uint)(verticalUnit * 7), 0};
+	start = {(uint)(verticalUnit * 7), (uint)0};
 	end = {(uint)(verticalUnit * 9), (uint)height};
 	display.drawFilledRectangle(Point(start, xOffset, yOffset), Point(end, xOffset, yOffset), mørkeBlå);
+}
+
+
+/**
+ * @brief Button handler
+ * @note Has to be called every loop
+*/
+void buttonHandler()
+{
+	if(buttonMenu.isLongPressed())
+	{
+		printf("MENU long pressed\n");
+	}
+	if(buttonMenu.isHeld())
+	{
+		gpio_put(LEFT_MOSFET_LED, 0);
+		gpio_put(LEFT_MOSFET, 0);
+		printf("MENU held\n");
+	}
+	if(buttonMenu.isClicked())
+	{
+		gpio_put(LEFT_MOSFET_LED, 1);
+		gpio_put(LEFT_MOSFET, 1);
+		printf("MENU\n");
+	}
+	if(buttonDown.isHeld())
+	{
+		printf("DOWN held\n");
+		display.clear();
+	}
+	if(buttonDown.isClicked())
+	{
+		printf("DOWN\n");
+		drawNorwegianFlag();
+	}
+	if(buttonUp.isHeld())
+	{
+		gpio_put(RIGHT_MOSFET_LED, 0);
+		gpio_put(RIGHT_MOSFET, 0);
+
+		printf("UP held\n");
+	}
+	if(buttonUp.isClicked())
+	{
+		gpio_put(RIGHT_MOSFET_LED, 1);
+		gpio_put(RIGHT_MOSFET, 1);
+
+		printf("UP\n");
+	}
+
+	buttonUp.update();
+	buttonMenu.update();
+	buttonDown.update();
+}
+
+unsigned long lastPolling = 0;
+/**
+ * @brief Periodically poll the INA219 for data
+ * @note Has to be called every loop
+*/
+void pollINA()
+{
+	if((time_us_32() - lastPolling) < 1000)
+		return;
+
+	ina219.getData(true);
 }
 
 
@@ -464,10 +467,13 @@ int main()
 
 	display.clear();
 	display.setBrightness(backlightBrightness);
-
-	display.fill(Colors::RaspberryRed);
-	//drawNorwegianFlag();
-	display.drawCircle({displayParams.width / 2, displayParams.height / 2}, 50, Colors::White, 5);
+	display.drawCircle(display.getCenter(), 50, Colors::White);
+	display.drawLine(Point(0, 0), Point(172, 320), Colors::White);
+	display.drawLine(Point(0, 320), Point(172, 0), Colors::White);
+	display.drawLine(Point((uint)0, displayParams.height/2), Point(displayParams.width, displayParams.height/2), Colors::White);
+	display.drawLine(Point(displayParams.width/2, (uint)0), Point(displayParams.width/2, displayParams.height), Colors::White);
+	display.drawRectangle(display.getCenter(), 71, 71, Colors::White);
+	//display.drawFilledCircle(Point(displayParams.width/2, displayParams.height/2), 40, Colors::Pink);
 
 	while(1)
 	{
