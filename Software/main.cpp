@@ -19,10 +19,10 @@ Display_Pins displayPins = {
 Display_Params displayParams = {
 	.height = DISP_HEIGHT,
 	.width = DISP_WIDTH,
-	.columnOffset1 = DISP_OFFSET_X,
-	.columnOffset2 = DISP_OFFSET_Y,
-	.rowOffset1 = DISP_OFFSET_X,
-	.rowOffset2 = DISP_OFFSET_Y,
+	.columnOffset1 = DISP_OFFSET_X0,
+	.columnOffset2 = DISP_OFFSET_X1,
+	.rowOffset1 = DISP_OFFSET_Y0,
+	.rowOffset2 = DISP_OFFSET_Y1,
 	.rotation = DISP_ROTATION
 };
 
@@ -216,14 +216,14 @@ void processUSBData()
 		// verify that the data is a number
 		if(!isNumber(data))
 		{
-			printf("Invalid current limit!\n");
+			printf("not a valid input!\n");
 			memset(buffer, 0, sizeof(buffer));
 			return;
 		}
 
 		// convert string to number
 		unsigned int _currentLimit = asciiToInt(data);
-		printf("Current limit: %d\n", _currentLimit);
+		printf("current_limit:%d\n", _currentLimit);
 		// set the current limit in EEPROM and local variable
 		memory.writeWord(MEMORY_CURRENT_LIMIT_ADDRESS, _currentLimit);
 		currentLimit = _currentLimit;
@@ -236,14 +236,14 @@ void processUSBData()
 		// verify that the data is a number
 		if(!isNumber(data))
 		{
-			printf("Invalid current limit!\n");
+			printf("not a valid input!\n");
 			memset(buffer, 0, sizeof(buffer));
 			return;
 		}
 
 		// convert string to number
 		unsigned int currentSetting = asciiToInt(data);
-		printf("Current setting: %d\n", currentSetting);
+		printf("current_setting:%d\n", currentSetting);
 		// set the current setting in EEPROM and local variable
 		memory.writeWord(MEMORY_CURRENT_ADDRESS, currentSetting);
 		currentNegotiated = currentSetting;
@@ -256,14 +256,14 @@ void processUSBData()
 		// verify that the data is a number
 		if(!isNumber(data))
 		{
-			printf("Invalid current limit!\n");
+			printf("not a valid input!\n");
 			memset(buffer, 0, sizeof(buffer));
 			return;
 		}
 
 		// convert string to number
 		unsigned int voltageSetting = asciiToInt(data);
-		printf("Voltage setting: %d\n", voltageSetting);
+		printf("voltage_setting:%d\n", voltageSetting);
 		// set the voltage setting in EEPROM and local variable
 		memory.writeWord(MEMORY_VOLTAGE_ADDRESS, voltageSetting);
 		voltageNegotiated = voltageSetting;
@@ -282,14 +282,14 @@ void processUSBData()
 		// verify that the data is a number
 		if(!isNumber(data))
 		{
-			printf("Invalid number!\n");
+			printf("not a valid input!\n");
 			memset(buffer, 0, sizeof(buffer));
 			return;
 		}
 
 		// convert string to number
 		unsigned char brightness = (unsigned char)asciiToInt(data);
-		printf("Brightness: %d\n", brightness);
+		printf("backlight:%d\n", brightness);
 		// set the display brightness
 		memory.writeWord(MEMORY_BACKLIGHT_ADDRESS, brightness);
 		backlightBrightness = brightness;
@@ -392,20 +392,53 @@ void pollINA()
 	ina219.getData(true);
 }
 
-unsigned long lastFill = 0;
-bool colored = false;
 /**
- * @brief Periodically fill the display with data
- * @note Has to be called every loop
+ * @brief Draw the Norwegian flag 
 */
-void fillDisplay()
+void drawNorwegianFlag()
 {
-	if((time_us_32() - lastFill) < 1000000)
-		return;
+    // https://no.wikipedia.org/wiki/Norges_flagg
 
-	Color color = colored ? Colors::Black : Colors::Cum;
-	display.fill(color);
-	colored = !colored;
+    // "official" flag colors
+    unsigned short høyRød = 0xb865;
+    unsigned short mørkeBlå = 0x010b;
+    unsigned short hvit = 0xffff;
+
+	// custom width and height
+	uint height = 220;
+	uint width = 160;
+
+	// calculate offset
+	uint xOffset = (displayParams.width - width) / 2;
+	uint yOffset = (displayParams.height - height) / 2;
+
+    // get the proportions of the flag
+    float horizontalUnit = 10;
+    float verticalUnit = 10;
+
+    // the first red section is 6 units wide and 6 units high
+    // fill in the background using the høyrød color
+	Point start = {(uint)0, (uint)0};
+	Point end = {(uint)width, (uint)height};
+    display.drawFilledRectangle(Point(start, xOffset, yOffset), Point(end, xOffset, yOffset), høyRød);
+
+    // draw the white vertical stripe
+    start = {(uint)0, (uint)(horizontalUnit * 6)};
+    end = {(uint)width, (uint)(horizontalUnit * 10)};
+    display.drawFilledRectangle(Point(start, xOffset, yOffset), Point(end, xOffset, yOffset), hvit);
+	// draw the white horizontal stripe
+	start = {(uint)(verticalUnit * 6), 0};
+	end = {(uint)(verticalUnit * 10), (uint)height};
+	display.drawFilledRectangle(Point(start, xOffset, yOffset), Point(end, xOffset, yOffset), hvit);
+
+	// draw the blue vertical stripe
+	start = {(uint)0, (uint)(horizontalUnit * 7)};
+    end = {(uint)width, (uint)(horizontalUnit * 9)};
+    display.drawFilledRectangle(Point(start, xOffset, yOffset), Point(end, xOffset, yOffset), mørkeBlå);
+	// draw the blue horizontal stripe
+	start = {(uint)(verticalUnit * 7), 0};
+	end = {(uint)(verticalUnit * 9), (uint)height};
+	display.drawFilledRectangle(Point(start, xOffset, yOffset), Point(end, xOffset, yOffset), mørkeBlå);
 }
 
 
@@ -432,12 +465,15 @@ int main()
 	display.clear();
 	display.setBrightness(backlightBrightness);
 
+	display.fill(Colors::RaspberryRed);
+	//drawNorwegianFlag();
+	display.drawCircle({displayParams.width / 2, displayParams.height / 2}, 50, Colors::White, 5);
+
 	while(1)
 	{
 		heartBeat();
 		pollINA();
 		processUSBData();
 		buttonHandler();
-		fillDisplay();
 	}
 }

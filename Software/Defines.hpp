@@ -1,3 +1,4 @@
+// This is a header guard. It prevents the file from being included more than once.
 #pragma once
 
 /***
@@ -12,16 +13,12 @@
 // I2C bus that the EEPROM and INA219 are connected to
 #define I2C0_SDA            12
 #define I2C0_SCL            13
+
 // I2C bus that the FUSB302 is connected to
 #define I2C1_SDA            2
 #define I2C1_SCL            3
 #define PD_INT_N            4
-// Display constants
-#define DISP_WIDTH          172
-#define DISP_HEIGHT         320
-#define DISP_OFFSET_X       34
-#define DISP_OFFSET_Y       0
-#define DISP_ROTATION       0
+
 // Display pins
 #define DISP_PIN_DC         16
 #define DISP_PIN_CS         17
@@ -29,10 +26,12 @@
 #define DISP_PIN_MOSI       19
 #define DISP_PIN_RST        20
 #define DISP_PIN_BL         21
+
 // Button pins
 #define BUTTON_UP           9
 #define BUTTON_MENU         10
 #define BUTTON_DOWN         11
+
 // Mosfet pins and LEDs
 #define LEFT_MOSFET_LED     14
 #define LEFT_MOSFET         15
@@ -49,6 +48,15 @@
  *        \_/ \__,_|_|  |_|\__,_|_.__/|_|\___||___/
  *                                                 
  */
+
+// Display constants
+#define DISP_WIDTH          172     // 172 pixels wide
+#define DISP_HEIGHT         320     // 320 pixels tall
+#define DISP_OFFSET_X0      34      // cut off on the left side of the display
+#define DISP_OFFSET_X1      34      // cut off on the right side of the display
+#define DISP_OFFSET_Y0      0       // cut off on the top of the display
+#define DISP_OFFSET_Y1      0       // ut off on the bottom of the display
+#define DISP_ROTATION       0       // 0, 1, 2, or 3
 
 // default variables
 #define CURRENT_LIMIT_DEFAULT       3000    // mA
@@ -76,6 +84,20 @@
 
 
 /***
+ *         _       _     _                             
+ *        / \   __| | __| |_ __ ___  ___ ___  ___  ___ 
+ *       / _ \ / _` |/ _` | '__/ _ \/ __/ __|/ _ \/ __|
+ *      / ___ \ (_| | (_| | | |  __/\__ \__ \  __/\__ \
+ *     /_/   \_\__,_|\__,_|_|  \___||___/___/\___||___/
+ *                                                     
+ */
+
+#define FUSB302_ADDRESS     0x22
+#define INA219_ADDRESS      0x40
+#define EEPROM_ADDRESS      0x50
+
+
+/***
  *      ___            _           _           
  *     |_ _|_ __   ___| |_   _  __| | ___  ___ 
  *      | || '_ \ / __| | | | |/ _` |/ _ \/ __|
@@ -98,21 +120,6 @@
 #include "FUSB302.hpp"
 #include "INA219.hpp"
 #include "Memory.hpp"
-
-
-
-/***
- *         _       _     _                             
- *        / \   __| | __| |_ __ ___  ___ ___  ___  ___ 
- *       / _ \ / _` |/ _` | '__/ _ \/ __/ __|/ _ \/ __|
- *      / ___ \ (_| | (_| | | |  __/\__ \__ \  __/\__ \
- *     /_/   \_\__,_|\__,_|_|  \___||___/___/\___||___/
- *                                                     
- */
-
-#define FUSB302_ADDRESS     0x22
-#define INA219_ADDRESS      0x40
-#define EEPROM_ADDRESS      0x50
 
 
 

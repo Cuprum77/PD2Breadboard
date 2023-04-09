@@ -49,6 +49,20 @@ struct Color
         this->b = color & 0x1F;
     }
 
+    Color(Color color, unsigned short multiplier)
+    {
+        this->r = color.r * multiplier;
+        this->g = color.g * multiplier;
+        this->b = color.b * multiplier;
+    }
+
+    Color(unsigned short color, unsigned short multiplier)
+    {
+        this->r = ((color >> 11) & 0x1F) * multiplier;
+        this->g = ((color >> 5) & 0x3F) * multiplier;
+        this->b = (color & 0x1F) * multiplier;
+    }
+
     Color(unsigned short r, unsigned short g, unsigned short b)
     {
         this->r = r;

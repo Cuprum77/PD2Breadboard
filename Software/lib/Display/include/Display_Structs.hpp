@@ -21,50 +21,62 @@ struct Display_Params
     unsigned int rotation;
 };
 
-struct Coordinate
+struct Point
 {
     unsigned int x;
     unsigned int y;
 
-    Coordinate()
+    Point()
     {
         this->x = 0;
         this->y = 0;
     }
 
-    Coordinate(unsigned int x, unsigned int y)
+    Point(Point Point, unsigned int offset)
+    {
+        this->x = Point.x + offset;
+        this->y = Point.y + offset;
+    }
+
+    Point(Point Point, unsigned int xOffset, unsigned int yOffset)
+    {
+        this->x = Point.x + xOffset;
+        this->y = Point.y + yOffset;
+    }
+
+    Point(unsigned int x, unsigned int y)
     {
         this->x = x;
         this->y = y;
     }
 
-    bool operator==(const Coordinate& other)
+    bool operator==(const Point& other)
     {
         return this->x == other.x && this->y == other.y;
     }
 
-    bool operator!=(const Coordinate& other)
+    bool operator!=(const Point& other)
     {
         return !(*this == other);
     }
 
-    Coordinate operator+(const Coordinate& other)
+    Point operator+(const Point& other)
     {
-        return Coordinate(this->x + other.x, this->y + other.y);
+        return Point(this->x + other.x, this->y + other.y);
     }
 
-    Coordinate operator-(const Coordinate& other)
+    Point operator-(const Point& other)
     {
-        return Coordinate(this->x - other.x, this->y - other.y);
+        return Point(this->x - other.x, this->y - other.y);
     }
 
-    Coordinate operator*(const Coordinate& other)
+    Point operator*(const Point& other)
     {
-        return Coordinate(this->x * other.x, this->y * other.y);
+        return Point(this->x * other.x, this->y * other.y);
     }
 
-    Coordinate operator/(const Coordinate& other)
+    Point operator/(const Point& other)
     {
-        return Coordinate(this->x / other.x, this->y / other.y);
+        return Point(this->x / other.x, this->y / other.y);
     }
 };
