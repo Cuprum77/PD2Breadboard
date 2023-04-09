@@ -116,5 +116,7 @@ struct Color
         this->r = r >> 3 & 0x1F;
         this->g = g >> 2 & 0x3F;
         this->b = b >> 3 & 0x1F;
+
+        return *this;
     }
 };

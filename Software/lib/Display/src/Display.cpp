@@ -150,12 +150,12 @@ void Display::setCursor(Point Point)
 {
     // set the pixel x address
     this->columnAddressSet(
-        Point.x + this->params.columnOffset1, 
+        Point.X() + this->params.columnOffset1, 
         (this->params.width - 1) + this->params.columnOffset2
     );
     // set the pixel y address
     this->rowAddressSet(
-        Point.y + this->params.rowOffset1, 
+        Point.Y() + this->params.rowOffset1, 
         (this->params.height - 1) + this->params.rowOffset2
     );
 }
@@ -226,16 +226,16 @@ void Display::drawLine(Point start, Point end, Color color)
     // https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm
 
     // move Points into local variables
-    uint x0 = start.x;
-    uint y0 = start.y;
-    uint x1 = end.x;
-    uint y1 = end.y;
+    uint x0 = start.X();
+    uint y0 = start.Y();
+    uint x1 = end.X();
+    uint y1 = end.Y();
 
     // get the difference between the x and y Points
-    int dx = abs((int)end.x - (int)start.x);
-    int sx = start.x < end.x ? 1 : -1;
-    int dy = -abs((int)end.y - (int)start.y);
-    int sy = start.y < end.y ? 1 : -1;
+    int dx = abs((int)end.X() - (int)start.X());
+    int sx = start.X() < end.X() ? 1 : -1;
+    int dy = -abs((int)end.Y() - (int)start.Y());
+    int sy = start.Y() < end.Y() ? 1 : -1;
     // calculate the error
     int error = dx + dy;
     
@@ -280,10 +280,10 @@ void Display::drawLine(Point start, Point end, Color color)
 void Display::drawRectangle(Point start, Point end, Color color)
 {
     // draw the rectangle
-    this->drawLine({start.x, start.y}, {end.x, start.y}, color);
-    this->drawLine({end.x, start.y}, {end.x, end.y}, color);
-    this->drawLine({end.x, end.y}, {start.x, end.y}, color);
-    this->drawLine({start.x, end.y}, {start.x, start.y}, color);
+    this->drawLine({start.X(), start.Y()}, {end.X(), start.Y()}, color);
+    this->drawLine({end.X(), start.Y()}, {end.X(), end.Y()}, color);
+    this->drawLine({end.X(), end.Y()}, {start.X(), end.Y()}, color);
+    this->drawLine({start.X(), end.Y()}, {start.X(), start.Y()}, color);
 }
 
 /**
@@ -295,10 +295,7 @@ void Display::drawRectangle(Point start, Point end, Color color)
 void Display::drawRectangle(Rectangle rect, Color color)
 {
     // draw the rectangle
-    this->drawLine(rect.corner1, rect.corner2, color);
-    this->drawLine(rect.corner2, rect.corner3, color);
-    this->drawLine(rect.corner3, rect.corner4, color);
-    this->drawLine(rect.corner4, rect.corner1, color);
+    this->drawRectangle(rect.X(), rect.Y(), color);
 }
 
 /**
@@ -312,8 +309,8 @@ void Display::drawRectangle(Rectangle rect, Color color)
 void Display::drawRectangle(Point center, uint width, uint height, Color color)
 {
     // calculate the start and end Points
-    Point start = {center.x - (width / 2), center.y - (height / 2)};
-    Point end = {center.x + (width / 2), center.y + (height / 2)};
+    Point start = {center.X() - (width / 2), center.Y() - (height / 2)};
+    Point end = {center.X() + (width / 2), center.Y() + (height / 2)};
 
     // draw the rectangle
     this->drawRectangle(start, end, color);
@@ -331,8 +328,8 @@ void Display::drawFilledRectangle(Point start, Point end, Color color)
     unsigned short color16 = color.to16bit();
 
     // calculate the size of the rectangle
-    uint width = end.x - start.x;
-    uint height = end.y - start.y;
+    uint width = end.X() - start.X();
+    uint height = end.Y() - start.Y();
     
     this->setCursor({0, 0});
     
@@ -340,7 +337,7 @@ void Display::drawFilledRectangle(Point start, Point end, Color color)
     for(int i = 0; i < height; i++)
     {
         // move the cursor to the next row
-        this->setCursor({start.x, start.y + i});
+        this->setCursor({start.X(), start.Y() + i});
 
         // loop through the width
         for(int j = 0; j < width; j++)
@@ -363,8 +360,8 @@ void Display::drawCircle(Point center, uint radius, Color color)
     // https://en.wikipedia.org/wiki/Midpoint_circle_algorithm
 
     // move Points into local variables
-    int x0 = center.x;
-    int y0 = center.y;
+    int x0 = center.X();
+    int y0 = center.Y();
     int x = radius;
     int y = 0;
     int error = 3 - 2 * x;
@@ -413,8 +410,8 @@ void Display::drawFilledCircle(Point center, uint radius, Color color)
     // https://en.wikipedia.org/wiki/Midpoint_circle_algorithm
 
     // move Points into local variables
-    int x0 = center.x;
-    int y0 = center.y;
+    int x0 = center.X();
+    int y0 = center.Y();
     int x = radius;
     int y = 0;
     int error = 3 - 2 * x;

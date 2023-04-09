@@ -355,27 +355,27 @@ void drawNorwegianFlag()
 
     // the first red section is 6 units wide and 6 units high
     // fill in the background using the høyrød color
-	Point start = {(uint)0, (uint)0};
-	Point end = {(uint)width, (uint)height};
-    display.drawFilledRectangle(Point(start, xOffset, yOffset), Point(end, xOffset, yOffset), høyRød);
+	Point start = {(uint)0 + xOffset, (uint)0 + yOffset};
+	Point end = {(uint)width + xOffset, (uint)height + yOffset};
+    display.drawFilledRectangle(start, end, høyRød);
 
     // draw the white vertical stripe
-    start = {(uint)0, (uint)(horizontalUnit * 6)};
-    end = {(uint)width, (uint)(horizontalUnit * 10)};
-    display.drawFilledRectangle(Point(start, xOffset, yOffset), Point(end, xOffset, yOffset), hvit);
+    start = {(uint)0 + xOffset, (uint)(horizontalUnit * 6) + yOffset};
+    end = {(uint)width + xOffset, (uint)(horizontalUnit * 10) + yOffset};
+    display.drawFilledRectangle(start, end, hvit);
 	// draw the white horizontal stripe
-	start = {(uint)(verticalUnit * 6), (uint)0};
-	end = {(uint)(verticalUnit * 10), (uint)height};
-	display.drawFilledRectangle(Point(start, xOffset, yOffset), Point(end, xOffset, yOffset), hvit);
+	start = {(uint)(verticalUnit * 6) + xOffset, (uint)0 + yOffset};
+	end = {(uint)(verticalUnit * 10) + xOffset, (uint)height + yOffset};
+	display.drawFilledRectangle(start, end, hvit);
 
 	// draw the blue vertical stripe
-	start = {(uint)0, (uint)(horizontalUnit * 7)};
-    end = {(uint)width, (uint)(horizontalUnit * 9)};
-    display.drawFilledRectangle(Point(start, xOffset, yOffset), Point(end, xOffset, yOffset), mørkeBlå);
+	start = {(uint)0 + xOffset, (uint)(horizontalUnit * 7) + yOffset};
+    end = {(uint)width + xOffset, (uint)(horizontalUnit * 9) + yOffset};
+    display.drawFilledRectangle(start, end, mørkeBlå);
 	// draw the blue horizontal stripe
-	start = {(uint)(verticalUnit * 7), (uint)0};
-	end = {(uint)(verticalUnit * 9), (uint)height};
-	display.drawFilledRectangle(Point(start, xOffset, yOffset), Point(end, xOffset, yOffset), mørkeBlå);
+	start = {(uint)(verticalUnit * 7) + xOffset, (uint)0 + yOffset};
+	end = {(uint)(verticalUnit * 9) + xOffset, (uint)height + yOffset};
+	display.drawFilledRectangle(start, end, mørkeBlå);
 }
 
 
@@ -408,8 +408,8 @@ void buttonHandler()
 	}
 	if(buttonDown.isClicked())
 	{
-		printf("DOWN\n");
 		drawNorwegianFlag();
+		printf("DOWN\n");
 	}
 	if(buttonUp.isHeld())
 	{
@@ -474,6 +474,13 @@ int main()
 	display.drawLine(Point(displayParams.width/2, (uint)0), Point(displayParams.width/2, displayParams.height), Colors::White);
 	display.drawRectangle(display.getCenter(), 71, 71, Colors::White);
 	//display.drawFilledCircle(Point(displayParams.width/2, displayParams.height/2), 40, Colors::Pink);
+
+	/*Rectangle rect = Rectangle(
+		Point(),
+		Point(displayParams.width, displayParams.height),
+		Point(),
+		Point()
+	);*/
 
 	while(1)
 	{
