@@ -46,6 +46,28 @@ struct Color
     }
 
     /**
+     * @brief Creates a color from a Colors enum
+     * @param color Colors enum
+    */
+    Color(Colors color)
+    {
+        this->r = (color >> 11) & 0x1F;
+        this->g = (color >> 5) & 0x3F;
+        this->b = color & 0x1F;
+    }
+
+    /**
+     * @brief Creates a color from a 8 bit value
+     * @param color 8-bit color
+    */
+    Color(unsigned char color)
+    {
+        this->r = (color >> 5) & 0x03;
+        this->g = (color >> 2) & 0x03;
+        this->b = color & 0x02;
+    }
+
+    /**
      * @brief Creates a color from a 16 bit value
      * @param color 16-bit color
     */

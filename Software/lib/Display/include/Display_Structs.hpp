@@ -229,7 +229,7 @@ public:
 
     /**
      * @brief Get the bottom of the rectangle
-     * @return unsigned int
+     * @return unsigned int that is the Y coordinate of the bottom of the rectangle
     */
     unsigned int Bottom()
     {
@@ -238,7 +238,7 @@ public:
 
     /**
      * @brief Get the left of the rectangle
-     * @return unsigned int
+     * @return unsigned int that is the X coordinate of the left of the rectangle
     */
     unsigned int Left()
     {
@@ -247,7 +247,7 @@ public:
 
     /**
      * @brief Get the right of the rectangle
-     * @return unsigned int
+     * @return unsigned int that is the X coordinate of the right of the rectangle
     */
     unsigned int Right()
     {
@@ -256,7 +256,7 @@ public:
 
     /**
      * @brief Get the top of the rectangle
-     * @return unsigned int
+     * @return unsigned int that is the Y coordinate of the top of the rectangle
     */
     unsigned int Top()
     {

@@ -199,9 +199,10 @@ void processUSBData()
 	if(strcmp(buffer, REBOOT_TO_BOOTLOADER_CODE) == 0)
 	{
 		// reset the device into usb boot
-		// note, VSCode might complain that the device is not found
-		// but it will compile (at least on my machine lmao)
+		// the intellisense doesnt like this function so we have to disable it until we build
+#ifndef __INTELLISENSE__
 		reset_usb_boot(0, 0);
+#endif
 	}
 	else if(strcmp(buffer, RESET_CODE) == 0)
 	{
@@ -473,14 +474,10 @@ int main()
 	display.drawLine(Point((uint)0, displayParams.height/2), Point(displayParams.width, displayParams.height/2), Colors::White);
 	display.drawLine(Point(displayParams.width/2, (uint)0), Point(displayParams.width/2, displayParams.height), Colors::White);
 	display.drawRectangle(display.getCenter(), 71, 71, Colors::White);
-	//display.drawFilledCircle(Point(displayParams.width/2, displayParams.height/2), 40, Colors::Pink);
 
-	/*Rectangle rect = Rectangle(
-		Point(),
-		Point(displayParams.width, displayParams.height),
-		Point(),
-		Point()
-	);*/
+	sleep_ms(1000);
+	display.clear();
+	display.draw16bitBitmap(Point(), BACKGROUND_PIXEL_DATA, BACKGROUND_WIDTH, BACKGROUND_HEIGHT);
 
 	while(1)
 	{

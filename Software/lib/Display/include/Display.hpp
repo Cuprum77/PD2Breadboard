@@ -40,6 +40,9 @@ public:
     void drawCircle(Point center, uint radius, Color color = Colors::White);
     void drawFilledCircle(Point center, uint radius, Color color = Colors::White);
 
+    void draw16bitBitmap(Point point, const unsigned char* bitmap, uint width, uint height);
+    void draw16bitBitmap(Point point, const unsigned short* bitmap, uint width, uint height);
+
     void print(const char* text, Point Point, uint size);
     void print(double value, Point Point, uint size);
 

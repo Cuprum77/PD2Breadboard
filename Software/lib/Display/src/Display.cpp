@@ -121,7 +121,7 @@ Display::Display(spi_inst_t* spi, Display_Pins pins, Display_Params params, bool
 */
 void Display::clear()
 {
-    this->fill(0x0000);
+    this->fill(Colors::Black);
 }
 
 /**
@@ -441,6 +441,39 @@ void Display::drawFilledCircle(Point center, uint radius, Color color)
 
         // increment the y Point
         y++;
+    }
+}
+
+
+/**
+ * @brief Draw a 16 bit bitmap on the display
+ * @param location Location to draw the bitmap
+ * @param bitmap Array containing the bitmap
+ * @param arraySize Size of the bitmap array
+*/
+void Display::draw16bitBitmap(Point location, const unsigned char* bitmap, uint width, uint height)
+{
+    this->draw16bitBitmap(location, (const unsigned short*)bitmap, width, height);
+}
+
+/**
+ * @brief Draw a 16 bit bitmap on the display
+ * @param location Location to draw the bitmap
+ * @param bitmap Array containing the bitmap
+ * @param arraySize Size of the bitmap array
+*/
+void Display::draw16bitBitmap(Point location, const unsigned short* bitmap, uint width, uint height)
+{
+    // write the bitmap
+    int offset = 0;
+    for(int y = 0; y < height; y++)
+    {
+        // set the cursor
+        this->setCursor(Point(0, y));
+        // write the row of pixels, we need to multiply the width by 2 because we are using 16 bit colors
+        this->writePixels(&bitmap[offset], width * 2);
+        // increment the offset
+        offset += width;
     }
 }
 
