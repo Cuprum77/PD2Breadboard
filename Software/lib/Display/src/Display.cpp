@@ -77,12 +77,12 @@ Display::Display(spi_inst_t* spi, Display_Pins pins, Display_Params params, bool
     // set the display to interface pixel format
     // 0x5 << 4 = 65k of rgb interface
     // 0x5 = 16 bits per pixel
-    unsigned char pixelFormat = 0x5 << 4 | 0x5;
+    uchar pixelFormat = 0x5 << 4 | 0x5;
     this->writeData(Display_Commands::COLMOD, &pixelFormat, 1);
     sleep_ms(10);
 
     // madctl = memory access control
-    unsigned char madctl = 0x00;
+    uchar madctl = 0x00;
     switch(this->params.rotation)
     {
         case 1:
@@ -449,27 +449,29 @@ void Display::drawFilledCircle(Point center, uint radius, Color color)
  * @brief Draw a 16 bit bitmap on the display
  * @param location Location to draw the bitmap
  * @param bitmap Array containing the bitmap
- * @param arraySize Size of the bitmap array
+ * @param width Width of the bitmap
+ * @param height Height of the bitmap
 */
-void Display::draw16bitBitmap(Point location, const unsigned char* bitmap, uint width, uint height)
+void Display::drawBitmap(Point location, const uchar* bitmap, uint width, uint height)
 {
-    this->draw16bitBitmap(location, (const unsigned short*)bitmap, width, height);
+    this->drawBitmap(location, (const unsigned short*)bitmap, width, height);
 }
 
 /**
  * @brief Draw a 16 bit bitmap on the display
  * @param location Location to draw the bitmap
  * @param bitmap Array containing the bitmap
- * @param arraySize Size of the bitmap array
+ * @param width Width of the bitmap
+ * @param height Height of the bitmap
 */
-void Display::draw16bitBitmap(Point location, const unsigned short* bitmap, uint width, uint height)
+void Display::drawBitmap(Point location, const unsigned short* bitmap, uint width, uint height)
 {
     // write the bitmap
     int offset = 0;
     for(int y = 0; y < height; y++)
     {
         // set the cursor
-        this->setCursor(Point(0, y));
+        this->setCursor(Point(0 + location.X(), y + location.Y()));
         // write the row of pixels, we need to multiply the width by 2 because we are using 16 bit colors
         this->writePixels(&bitmap[offset], width * 2);
         // increment the offset
@@ -484,20 +486,19 @@ void Display::draw16bitBitmap(Point location, const unsigned short* bitmap, uint
  * @param Point Point to draw at
  * @param size Text size
  */
-void Display::print(const char* text, Point Point, uint size)
+void Display::print(const char* text, Point Point, uint size, Color color, Color background)
 {
+    // copy the Point to local variables
+    int x = Point.X();
+    int y = Point.Y();
+    // get the length of the text
+    uint length = strlen(text);
 
-}
-
-/**
- * @brief Write a double on the display
- * @param value Value to draw
- * @param Point Point to draw at
- * @param size Text size
-*/
-void Display::print(double value, Point Point, uint size)
-{
-
+    for(int i = 0; i < length; i++)
+    {
+        // increment the Point
+        x += this->drawAscii(text[i], {x, y}, size, color, background);
+    }
 }
 
 
@@ -505,7 +506,7 @@ void Display::print(double value, Point Point, uint size)
  * @brief Set the backlight brightness
  * @param brightness Brightness (0-255) if dimming is enabled, brightness (0-1) if dimming is disabled
 */
-void Display::setBrightness(unsigned char brightness)
+void Display::setBrightness(uchar brightness)
 {
     // check if dimming is enabled
     if (this->dimmingEnabled)
@@ -530,7 +531,7 @@ void Display::setBrightness(unsigned char brightness)
  * @param data Data to send
  * @param length Length of the data
 */
-void Display::writeData(Display_Commands command, const unsigned char* data, size_t length)
+void Display::writeData(Display_Commands command, const uchar* data, size_t length)
 {
     // configure the spi to 8 bit mode
     spi_set_format(this->spi, 8, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
@@ -543,7 +544,7 @@ void Display::writeData(Display_Commands command, const unsigned char* data, siz
     sleep_us(1);
 
     // send the command
-    unsigned char commandByte = (unsigned char)command;
+    uchar commandByte = (uchar)command;
     spi_write_blocking(this->spi, &commandByte, sizeof(commandByte));
 
     // send the data
@@ -570,11 +571,11 @@ void Display::writeData(Display_Commands command, const unsigned char* data, siz
 void Display::columnAddressSet(uint x0, uint x1)
 {
     // pack the data
-    unsigned char data[4] = { 
-        (unsigned char)(x0 >> 8), 
-        (unsigned char)(x0 & 0xff), 
-        (unsigned char)(x1 >> 8), 
-        (unsigned char)(x1 & 0xff) 
+    uchar data[4] = { 
+        (uchar)(x0 >> 8), 
+        (uchar)(x0 & 0xff), 
+        (uchar)(x1 >> 8), 
+        (uchar)(x1 & 0xff) 
     };
 
     // write the data
@@ -590,11 +591,11 @@ void Display::columnAddressSet(uint x0, uint x1)
 void Display::rowAddressSet(uint y0, uint y1)
 {
     // pack the data
-    unsigned char data[4] = { 
-        (unsigned char)(y0 >> 8), 
-        (unsigned char)(y0 & 0xff), 
-        (unsigned char)(y1 >> 8), 
-        (unsigned char)(y1 & 0xff) 
+    uchar data[4] = { 
+        (uchar)(y0 >> 8), 
+        (uchar)(y0 & 0xff), 
+        (uchar)(y1 >> 8), 
+        (uchar)(y1 & 0xff) 
     };
 
     // write the data
@@ -613,7 +614,7 @@ void Display::memoryWrite()
     sleep_us(1);
 
     // memory write
-    unsigned char command = (unsigned char)Display_Commands::RAMWR;
+    uchar command = (uchar)Display_Commands::RAMWR;
     spi_write_blocking(this->spi, &command, sizeof(command));
 
     sleep_us(1);
@@ -638,4 +639,54 @@ void Display::writePixels(const unsigned short* data, size_t length)
     }
 
     spi_write16_blocking(this->spi, data, length / 2);
+}
+
+/**
+ * @private
+ * @brief Draw an ascii character on the display
+ * @param character Character to draw
+ * @param Point Point to draw at
+ * @param size Text size
+ * @param color Color to draw the character
+ * @return Width of the character
+*/
+uint Display::drawAscii(const char character, Point point, uint size, Color color, Color background)
+{
+    // get the relevant bitmap data which is indexed according to the ascii table
+    const uint* bitmap = FONT(character);
+
+    // if the bitmap is a null pointer, return
+    if (bitmap == nullptr)
+        return 0;
+
+    // create a pixel buffer
+    unsigned short buffer[FONT_WIDTH * FONT_HEIGHT + 1];
+    unsigned int offset = 0;
+
+    // loop through the bitmap data
+    for(int j = 0; j < FONT_DATA; j++)
+    {
+        uint data = bitmap[j];
+
+        // if the current data is 0, we have completed our loop
+        if (data == 0)
+            break;
+
+        // set the color of the pixel based on the index
+        Color pixel = (j & 0x1) ? color : background;
+
+        // add the number of pixels to the buffer as specified by the data
+        for(int i = 0; i < data; i++)
+        {
+            buffer[i + offset] = pixel.to16bit();
+        }
+
+        offset += data;
+    }
+
+    // write the pixels to the display
+    this->drawBitmap(point, buffer, FONT_WIDTH, FONT_HEIGHT);
+
+    // return the character width
+    return FONT_WIDTH - FONT_SPACING;
 }

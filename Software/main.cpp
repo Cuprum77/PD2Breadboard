@@ -7,16 +7,20 @@ unsigned int currentLimit = CURRENT_LIMIT_DEFAULT;
 unsigned int backlightBrightness = BACKLIGHT_DEFAULT;
 
 // set the display parameters
+// the ifdefs are used to prevent the intellisense from complaining about the variables not being defined
 Display_Pins displayPins = {
+#ifndef __INTELLISENSE__
 	.rst = DISP_PIN_RST,
 	.dc = DISP_PIN_DC,
 	.cs = DISP_PIN_CS,
 	.sda = DISP_PIN_MOSI,
 	.scl = DISP_PIN_SCK,
 	.bl = DISP_PIN_BL
+#endif
 };
 
 Display_Params displayParams = {
+#ifndef __INTELLISENSE__
 	.height = DISP_HEIGHT,
 	.width = DISP_WIDTH,
 	.columnOffset1 = DISP_OFFSET_X0,
@@ -24,6 +28,7 @@ Display_Params displayParams = {
 	.rowOffset1 = DISP_OFFSET_Y0,
 	.rowOffset2 = DISP_OFFSET_Y1,
 	.rotation = DISP_ROTATION
+#endif
 };
 
 // Create the objects
@@ -338,9 +343,9 @@ void drawNorwegianFlag()
     // https://no.wikipedia.org/wiki/Norges_flagg
 
     // "official" flag colors
-    unsigned short høyRød = 0xb865;
-    unsigned short mørkeBlå = 0x010b;
-    unsigned short hvit = 0xffff;
+    Color høyRød = Color((unsigned short)0xb865);
+    Color mørkeBlå = Color((unsigned short)0x010b);
+    Color hvit = Colors::White;
 
 	// custom width and height
 	uint height = 220;
@@ -379,6 +384,25 @@ void drawNorwegianFlag()
 	display.drawFilledRectangle(start, end, mørkeBlå);
 }
 
+/**
+ * @brief Draw the Ukrainian flag
+*/
+void drawUkranianFlag()
+{
+	// https://en.wikipedia.org/wiki/Flag_of_Ukraine
+
+	// official flag colors
+	Color strongAzure = Color().hexToColor(0x0057b7);
+	Color yellow = Color().hexToColor(0xffd700);
+
+	// draw the background
+	display.fill(yellow);
+	// draw the filled rectangle
+	Point start = {(int)(displayParams.width / 2), (int)0};
+	Point end = {displayParams.width, displayParams.height};
+	display.drawFilledRectangle(start, end, strongAzure);
+}
+
 
 /**
  * @brief Button handler
@@ -402,10 +426,15 @@ void buttonHandler()
 		gpio_put(LEFT_MOSFET, 1);
 		printf("MENU\n");
 	}
+	if(buttonDown.isLongPressed())
+	{
+		printf("DOWN long pressed\n");
+		display.clear();
+	}
 	if(buttonDown.isHeld())
 	{
-		printf("DOWN held\n");
-		display.clear();
+		drawUkranianFlag();
+		printf("DOWN held\n");		
 	}
 	if(buttonDown.isClicked())
 	{
@@ -467,17 +496,8 @@ int main()
 	ina219.setData();
 
 	display.clear();
-	display.setBrightness(backlightBrightness);
-	display.drawCircle(display.getCenter(), 50, Colors::White);
-	display.drawLine(Point(0, 0), Point(172, 320), Colors::White);
-	display.drawLine(Point(0, 320), Point(172, 0), Colors::White);
-	display.drawLine(Point((uint)0, displayParams.height/2), Point(displayParams.width, displayParams.height/2), Colors::White);
-	display.drawLine(Point(displayParams.width/2, (uint)0), Point(displayParams.width/2, displayParams.height), Colors::White);
-	display.drawRectangle(display.getCenter(), 71, 71, Colors::White);
-
-	sleep_ms(1000);
-	display.clear();
-	display.draw16bitBitmap(Point(), BACKGROUND_PIXEL_DATA, BACKGROUND_WIDTH, BACKGROUND_HEIGHT);
+	//display.drawBitmap(Point(), BACKGROUND_PIXEL_DATA, BACKGROUND_WIDTH, BACKGROUND_HEIGHT);
+	display.print("boykisser", Point(0, 34));
 
 	while(1)
 	{

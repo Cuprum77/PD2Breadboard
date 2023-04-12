@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <math.h>
+#include <string.h>
 
 #include "pico/stdlib.h"
 #include "hardware/spi.h"
@@ -12,7 +13,10 @@
 #include "Display_Color.hpp"
 #include "Display_Enums.hpp"
 
+#include "Font.h"
+
 #define uint unsigned int
+#define uchar unsigned char
 #define SPI_BAUDRATE 125000000  // 125 MHz
 
 #define min(x, y) (((x) < (y)) ? (x) : (y))
@@ -40,11 +44,16 @@ public:
     void drawCircle(Point center, uint radius, Color color = Colors::White);
     void drawFilledCircle(Point center, uint radius, Color color = Colors::White);
 
-    void draw16bitBitmap(Point point, const unsigned char* bitmap, uint width, uint height);
-    void draw16bitBitmap(Point point, const unsigned short* bitmap, uint width, uint height);
+    void drawBitmap(Point point, const unsigned char* bitmap, uint width, uint height);
+    void drawBitmap(Point point, const unsigned short* bitmap, uint width, uint height);
 
-    void print(const char* text, Point Point, uint size);
-    void print(double value, Point Point, uint size);
+    void write(const char* text, Point Point, uint size = 3, Color color = Colors::White, Color background = Colors::Black);
+    void write(long long value, Point Point, uint size = 3, Color color = Colors::White, Color background = Colors::Black);
+    void write(double value, Point Point, uint size = 3, Color color = Colors::White, Color background = Colors::Black);
+    
+    void print(const char* text, Point Point, uint size = 3, Color color = Colors::White, Color background = Colors::Black);
+    void print(long long value, Point Point, uint size = 3, Color color = Colors::White, Color background = Colors::Black);
+    void print(double value, Point Point, uint size = 3, Color color = Colors::White, Color background = Colors::Black);
 
     void setBrightness(unsigned char brightness);
 private:
@@ -62,4 +71,6 @@ private:
     void rowAddressSet(uint y0, uint y1);
     void memoryWrite();
     void writePixels(const unsigned short* data, size_t length);
+    
+    uint drawAscii(const char c, Point Point, uint size, Color color, Color background);
 };
