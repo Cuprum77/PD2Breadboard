@@ -18,12 +18,15 @@ add_executable(${PROJECT_NAME}
     ${CMAKE_CURRENT_LIST_DIR}/main.cpp
 )
 
+# Add all the source files in the lib directory to the project
 AUX_SOURCE_DIRECTORY(lib SUB_SOURCES)
 
+# Add the source files to the project
 target_sources(${PROJECT_NAME} PUBLIC 
     ${SUB_SOURCES}
 )
 
+# Add the include directories to the project
 target_include_directories(${PROJECT_NAME} PUBLIC
     ${CMAKE_CURRENT_LIST_DIR}
 )
@@ -57,3 +60,13 @@ target_link_libraries(${PROJECT_NAME}
 # Enable usb output, disable uart output
 pico_enable_stdio_usb(${PROJECT_NAME} 1)
 pico_enable_stdio_uart(${PROJECT_NAME} 0)
+
+# Run the programming script to program the device
+add_custom_command(TARGET ${PROJECT_NAME}
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E echo "Programming device..."
+    COMMAND python3 ${CMAKE_SOURCE_DIR}/scripts/programmer/programmer.py
+    DEPENDS ${CMAKE_SOURCE_DIR}/scripts/programmer/programmer.py 
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.u2f
+    FORCE
+)

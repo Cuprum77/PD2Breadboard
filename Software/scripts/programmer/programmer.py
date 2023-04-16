@@ -1,6 +1,6 @@
 # the file name, its location and the target device name
 file_name = "USB-PD_Power_Supply.uf2"
-file_path = "build/" + file_name
+file_path = "../build/" + file_name
 device_target = "RPI-RP2"
 # the vendor id of the device
 vendor_id = "2E8A"
@@ -21,6 +21,9 @@ import sys
 import subprocess
 import time
 
+
+# Fix the path so that the script can be run from any directory
+file_path = os.path.abspath(file_path)
 
 # check if the 'pyserial' module is installed and install it if not
 try:
