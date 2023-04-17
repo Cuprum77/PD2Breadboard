@@ -498,13 +498,15 @@ int main()
 	//display.clear();
 	//display.drawBitmap(Point(), BACKGROUND_PIXEL_DATA, BACKGROUND_WIDTH, BACKGROUND_HEIGHT);
 	
-	display.fill(Colors::Piss);
+	display.fill(Colors::Cum);
 	display.setCursor(Point(0, 20));
 	display.write("femboy\nboykisser\n\thi");
 	display.write("_you\n");
 	display.print("today is a good day!");
 	display.print("\tyes");
 	display.print('n');
+	display.print(420);
+	display.print(0.69f);
 
 	while(1)
 	{

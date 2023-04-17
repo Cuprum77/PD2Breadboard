@@ -5,7 +5,10 @@ cmake_minimum_required(VERSION 3.15)
 project(Display)
 
 # Add the library with the above sources
-add_library(${PROJECT_NAME} src/Display.cpp)
+add_library(${PROJECT_NAME} 
+    src/Display.cpp
+    src/Print.cpp
+)
 add_library(sub::Display ALIAS ${PROJECT_NAME})
 
 target_include_directories(${PROJECT_NAME}

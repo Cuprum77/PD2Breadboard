@@ -123,6 +123,7 @@ void Display::clear()
 {
     this->fill(Colors::Black);
     this->fillColor = Colors::Black;
+    this->setCursor({0, 0});
 }
 
 /**
@@ -486,132 +487,6 @@ void Display::drawBitmap(const unsigned short* bitmap, uint width, uint height)
         // increment the offset
         offset += width;
     }
-}
-
-
-/**
- * @brief Write a character on the display
- * @param c Character to print
- * @param size Size of the character
-*/
-void Display::write(char c, uint size)
-{
-    this->write(&c, this->fillColor.getOppositeColor(), this->fillColor, size);
-}
-
-/**
- * @brief Write a character on the display
- * @param character Character to print
- * @param size Size of the character
-*/
-void Display::write(const char* text, uint size)
-{
-    this->write(text, this->fillColor.getOppositeColor(), this->fillColor, size);
-}
-
-/**
- * @brief Write a character on the display
- * @param character Character to print
- * @param color Character color
- * @param size Size of the character
-*/
-void Display::write(const char* text, Color color, uint size)
-{
-    this->write(text, color, this->fillColor, size);
-}
-
-/**
- * @brief Write a character on the display
- * @param character Character to print
- * @param color Character color
- * @param background Background color
- * @param size Size of the character
-*/
-void Display::write(const char* text, Color color, Color background, uint size)
-{
-    // copy the Point to local variables
-    Point location = this->cursor;
-    // copy the Point to local variables
-    uint x = location.X();
-    uint y = location.Y();
-    // get the length of the text
-    uint length = strlen(text);
-
-    // loop through the text
-    for(int i = 0; i < length; i++)
-    {
-        // if the text is a new line, move the text to the next line
-        if (text[i] == '\n')
-        {
-            x = 0;
-            y += FONT_HEIGHT * size;
-            continue;
-        }
-        // if the text is a tab move the text to the next tab stop
-        else if (text[i] == '\t')
-        {
-            x += FONT_WIDTH * size * TAB_SIZE;
-            continue;
-        }
-        // check if the text is going to go off the screen by checking the future x Point with the width of the screen
-        else if ((x + FONT_WIDTH * size) > this->params.width)
-        {
-            // move the text to the next line
-            x = 0;
-            y += FONT_HEIGHT * size;
-        }
-
-        // increment the Point
-        x += this->drawAscii(text[i], {x, y}, size, color, background);
-    }
-
-    // set the cursor
-    this->setCursor(Point(x, y));
-}
-
-
-/**
- * @brief Print a character on the display
- * @param c Character to print
- * @param size Size of the character
-*/
-void Display::print(char c, uint size)
-{
-    this->print(&c, this->fillColor.getOppositeColor(), this->fillColor, size);
-}
-
-/**
- * @brief Print a character on the display
- * @param character Character to print
- * @param size Size of the character
-*/
-void Display::print(const char* text, uint size)
-{
-    this->print(text, this->fillColor.getOppositeColor(), this->fillColor, size);
-}
-
-/**
- * @brief Print a character on the display
- * @param character Character to print
- * @param color Character color
- * @param size Size of the character
-*/
-void Display::print(const char* text, Color color, uint size)
-{
-    this->print(text, color, this->fillColor, size);
-}
-
-/**
- * @brief Print a character on the display
- * @param character Character to print
- * @param color Character color
- * @param background Background color
- * @param size Size of the character
-*/
-void Display::print(const char* text, Color color, Color background, uint size)
-{
-    this->write(text, color, background, size);
-    this->write("\n", color, background, size);
 }
 
 

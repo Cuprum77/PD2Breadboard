@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <math.h>
 #include <string.h>
 
@@ -16,9 +17,17 @@
 #include "Font.h"
 
 
+// Typedefs
+#define ulong unsigned long
 #define uint unsigned int
 #define ushort unsigned short
 #define uchar unsigned char
+#define BIN 2
+#define OCT 8
+#define DEC 10
+#define HEX 16
+
+// SPI
 #define SPI_BAUDRATE 125000000  // 125 MHz
 
 #define min(x, y) (((x) < (y)) ? (x) : (y))
@@ -56,15 +65,72 @@ public:
     void drawBitmap(const unsigned char* bitmap, uint width, uint height);
     void drawBitmap(const unsigned short* bitmap, uint width, uint height);
 
-    void write(char c, uint size = 1);
-    void write(const char* text, uint size = 1);
-    void write(const char* text, Color color, uint size = 1);
-    void write(const char* text, Color color, Color background, uint size = 1);
+#pragma region Write
+    void write(char c, uchar size = 1, uchar base = DEC);
+    void write(char num, Color color, uchar size = 1, uchar base = DEC);
+    void write(char num, Color color, Color background, uchar size = 1, uchar base = DEC);
+    void write(uchar c, uchar size = 1, uchar base = DEC);
+    void write(uchar num, Color color, uchar size = 1, uchar base = DEC);
+    void write(uchar num, Color color, Color background, uchar size = 1, uchar base = DEC);
+    void write(short num, uchar size = 1, uchar base = DEC);
+    void write(short num, Color color, uchar size = 1, uchar base = DEC);
+    void write(short num, Color color, Color background, uchar size = 1, uchar base = DEC);
+    void write(ushort num, uchar size = 1, uchar base = DEC);
+    void write(ushort num, Color color, uchar size = 1, uchar base = DEC);
+    void write(ushort num, Color color, Color background, uchar size = 1, uchar base = DEC);
+    void write(int num, uchar size = 1, uchar base = DEC);
+    void write(int num, Color color, uchar size = 1, uchar base = DEC);
+    void write(int num, Color color, Color background, uchar size = 1, uchar base = DEC);
+    void write(uint num, uchar size = 1, uchar base = DEC);
+    void write(uint num, Color color, uchar size = 1, uchar base = DEC);
+    void write(uint num, Color color, Color background, uchar size = 1, uchar base = DEC);
+    void write(long num, uchar size = 1, uchar base = DEC);
+    void write(long num, Color color, uchar size = 1, uchar base = DEC);
+    void write(long num, Color color, Color background, uchar size = 1, uchar base = DEC);
+    void write(ulong num, uchar size = 1, uchar base = DEC);
+    void write(ulong num, Color color, uchar size = 1, uchar base = DEC);
+    void write(ulong num, Color color, Color background, uchar size = 1, uchar base = DEC);
+    void write(double num, uint precision = 2, uchar size = 1);
+    void write(double num, Color color, uint precision = 2, uchar size = 1);
+    void write(double num, Color color, Color background, uint precision = 2, uchar size = 1);
+    void write(const char* text, uchar size = 1);
+    void write(const char* text, Color color, uchar size = 1);
+    void write(const char* text, Color color, Color background, uchar size = 1);
+#pragma endregion
     
-    void print(char c, uint size = 1);
-    void print(const char* text, uint size = 1);
-    void print(const char* text, Color color, uint size = 1);
-    void print(const char* text, Color color, Color background, uint size = 1);
+#pragma region Print
+    void print(char c, uchar size = 1, uchar base = DEC);
+    void print(char num, Color color, uchar size = 1, uchar base = DEC);
+    void print(char num, Color color, Color background, uchar size = 1, uchar base = DEC);
+    void print(uchar c, uchar size = 1, uchar base = DEC);
+    void print(uchar num, Color color, uchar size = 1, uchar base = DEC);
+    void print(uchar num, Color color, Color background, uchar size = 1, uchar base = DEC);
+    void print(int num, uchar size = 1, uchar base = DEC);
+    void print(int num, Color color, uchar size = 1, uchar base = DEC);
+    void print(int num, Color color, Color background, uchar size = 1, uchar base = DEC);
+    void print(uint num, uchar size = 1, uchar base = DEC);
+    void print(uint num, Color color, uchar size = 1, uchar base = DEC);
+    void print(uint num, Color color, Color background, uchar size = 1, uchar base = DEC);
+    void print(short num, uchar size = 1, uchar base = DEC);
+    void print(short num, Color color, uchar size = 1, uchar base = DEC);
+    void print(short num, Color color, Color background, uchar size = 1, uchar base = DEC);
+    void print(ushort num, uchar size = 1, uchar base = DEC);
+    void print(ushort num, Color color, uchar size = 1, uchar base = DEC);
+    void print(ushort num, Color color, Color background, uchar size = 1, uchar base = DEC);
+    void print(long num, uchar size = 1, uchar base = DEC);
+    void print(long num, Color color, uchar size = 1, uchar base = DEC);
+    void print(long num, Color color, Color background, uchar size = 1, uchar base = DEC);
+    void print(ulong num, uchar size = 1, uchar base = DEC);
+    void print(ulong num, Color color, uchar size = 1, uchar base = DEC);
+    void print(ulong num, Color color, Color background, uchar size = 1, uchar base = DEC);
+    void print(double num, uint precision = 2, uchar size = 1);
+    void print(double num, Color color, uint precision = 2, uchar size = 1);
+    void print(double num, Color color, Color background, uint precision = 2, uchar size = 1);
+    void print(const char* text, uchar size = 1);
+    void print(const char* text, Color color, uchar size = 1);
+    void print(const char* text, Color color, Color background, uchar size = 1);
+    void print(void);
+#pragma endregion
 
     void setBrightness(unsigned char brightness);
 private:
@@ -88,4 +154,5 @@ private:
     void writePixels(const unsigned short* data, size_t length);
     
     uint drawAscii(const char c, Point Point, uint size, Color color, Color background);
+    void floatToString(double num, char* buffer, uint precision);
 };
