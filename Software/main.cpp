@@ -498,7 +498,7 @@ int main()
 	//display.clear();
 	//display.drawBitmap(Point(), BACKGROUND_PIXEL_DATA, BACKGROUND_WIDTH, BACKGROUND_HEIGHT);
 	
-	display.fill(Colors::Cum);
+	display.fill(Colors::Piss);
 	display.setCursor(Point(0, 20));
 	display.write("femboy\nboykisser\n\thi");
 	display.write("_you\n");

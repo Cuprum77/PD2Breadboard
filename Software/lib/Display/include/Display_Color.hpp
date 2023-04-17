@@ -31,6 +31,7 @@ typedef enum
     RaspberryRed = 0x9861,
     DarkOrange = 0xfc60,
     Gold = 0xfea0,
+    Piss = 0xe702,
 } Colors;
 
 struct Color
