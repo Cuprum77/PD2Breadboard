@@ -6,6 +6,10 @@ unsigned int voltageNegotiated = VOLTAGE_SETTING_DEFAULT;
 unsigned int currentLimit = CURRENT_LIMIT_DEFAULT;
 unsigned int backlightBrightness = BACKLIGHT_DEFAULT;
 
+// store the runtimes of the cores
+unsigned long core0RunTime = 0;
+unsigned long core1RunTime = 0;
+
 // set the display parameters
 // the ifdefs are used to prevent the intellisense from complaining about the variables not being defined
 Display_Pins displayPins = {
@@ -94,6 +98,25 @@ void initLEDs()
 	// for debugging purposes
 	gpio_init(PICO_DEFAULT_LED_PIN);
 	gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
+}
+
+/**
+ * @brief Error function
+ * @note This is a blocking function that blinks the LEDS if an error occurs
+*/
+void Error()
+{
+	unsigned long lastErrorBlink = 0;
+	uint ledErrorValue = 0;
+	while(1)
+	{
+		if((time_us_32() - lastErrorBlink) > 100000)
+		{
+			gpio_put(LEFT_MOSFET_LED, ledErrorValue ^= 1);
+			gpio_put(RIGHT_MOSFET_LED, ledErrorValue ^= 1);
+			lastErrorBlink = time_us_32();
+		}
+	}
 }
 
 /**
@@ -336,75 +359,6 @@ void processUSBData()
 
 
 /**
- * @brief Draw the Norwegian flag 
-*/
-void drawNorwegianFlag()
-{
-    // https://no.wikipedia.org/wiki/Norges_flagg
-
-    // "official" flag colors
-    Color høyRød = Color((unsigned short)0xb865);
-    Color mørkeBlå = Color((unsigned short)0x010b);
-    Color hvit = Colors::White;
-
-	// custom width and height
-	uint height = 220;
-	uint width = 160;
-
-	// calculate offset
-	uint xOffset = (displayParams.width - width) / 2;
-	uint yOffset = (displayParams.height - height) / 2;
-
-    // get the proportions of the flag
-    float horizontalUnit = 10;
-    float verticalUnit = 10;
-
-    // the first red section is 6 units wide and 6 units high
-    // fill in the background using the høyrød color
-	Point start = {(uint)0 + xOffset, (uint)0 + yOffset};
-	Point end = {(uint)width + xOffset, (uint)height + yOffset};
-    display.drawFilledRectangle(start, end, høyRød);
-
-    // draw the white vertical stripe
-    start = {(uint)0 + xOffset, (uint)(horizontalUnit * 6) + yOffset};
-    end = {(uint)width + xOffset, (uint)(horizontalUnit * 10) + yOffset};
-    display.drawFilledRectangle(start, end, hvit);
-	// draw the white horizontal stripe
-	start = {(uint)(verticalUnit * 6) + xOffset, (uint)0 + yOffset};
-	end = {(uint)(verticalUnit * 10) + xOffset, (uint)height + yOffset};
-	display.drawFilledRectangle(start, end, hvit);
-
-	// draw the blue vertical stripe
-	start = {(uint)0 + xOffset, (uint)(horizontalUnit * 7) + yOffset};
-    end = {(uint)width + xOffset, (uint)(horizontalUnit * 9) + yOffset};
-    display.drawFilledRectangle(start, end, mørkeBlå);
-	// draw the blue horizontal stripe
-	start = {(uint)(verticalUnit * 7) + xOffset, (uint)0 + yOffset};
-	end = {(uint)(verticalUnit * 9) + xOffset, (uint)height + yOffset};
-	display.drawFilledRectangle(start, end, mørkeBlå);
-}
-
-/**
- * @brief Draw the Ukrainian flag
-*/
-void drawUkranianFlag()
-{
-	// https://en.wikipedia.org/wiki/Flag_of_Ukraine
-
-	// official flag colors
-	Color strongAzure = Color().hexToColor(0x0057b7);
-	Color yellow = Color().hexToColor(0xffd700);
-
-	// draw the background
-	display.fill(yellow);
-	// draw the filled rectangle
-	Point start = {(int)(displayParams.width / 2), (int)0};
-	Point end = {displayParams.width, displayParams.height};
-	display.drawFilledRectangle(start, end, strongAzure);
-}
-
-
-/**
  * @brief Button handler
  * @note Has to be called every loop
 */
@@ -433,12 +387,10 @@ void buttonHandler()
 	}
 	if(buttonDown.isHeld())
 	{
-		drawUkranianFlag();
 		printf("DOWN held\n");		
 	}
 	if(buttonDown.isClicked())
 	{
-		drawNorwegianFlag();
 		printf("DOWN\n");
 	}
 	if(buttonUp.isHeld())
@@ -468,15 +420,86 @@ unsigned long lastPolling = 0;
 */
 void pollINA()
 {
-	if((time_us_32() - lastPolling) < 1000)
+	if((time_us_32() - lastPolling) < 100000)
 		return;
 
-	ina219.getData(true);
+	ina219.getData();
+}
+
+/**
+ * @brief Main function
+ * @note This runs on the core 1
+*/
+void core1Main()
+{
+	// tell the other core that we are ready
+	multicore_fifo_push_blocking(MULTICORE_FLAG_VALUE);
+	// wait for the other core to be ready
+	uint g = multicore_fifo_pop_blocking();
+
+	// check if the second core is ready
+	if(g != MULTICORE_FLAG_VALUE)
+	{
+		// Enter an infinite loop if the first core is not ready
+		Error();
+	}
+	else
+	{
+		// tell the second core that we are ready
+		multicore_fifo_push_blocking(MULTICORE_FLAG_VALUE);
+	}
+
+	display.fill(Colors::RaspberryRed);
+	//display.drawBitmap(Point(), BACKGROUND_PIXEL_DATA, BACKGROUND_WIDTH, BACKGROUND_HEIGHT);
+	
+	Point amps = Point(0, 20);
+	Point volts = Point(0, 20 + FONT_HEIGHT);
+	Point watts = Point(0, 20 + FONT_HEIGHT * 2);
+
+	unsigned long lastUpdate = 0;
+	while(1)
+	{
+		unsigned long core1Time = time_us_32();
+		display.setCursor(amps);
+		display.write(ina219.getCurrent() / 1000, 2);
+		display.print("A");
+
+		display.setCursor(volts);
+		display.write(ina219.getVoltage(), 2);
+		display.print("V");
+
+		display.setCursor(watts);
+		display.write(ina219.getPower() / 1000, 2);
+		display.print("W\n");
+
+		if(core1RunTime == 0)
+		{
+			core1RunTime = time_us_32() - core1Time;
+			continue;
+		}
+
+		display.print("Core 0:");
+		display.write(core0RunTime);
+		display.print(" us");
+		double hz = 1/((float)core0RunTime * 0.000001);
+		display.write(hz, 2);
+		display.print(" Hz\n");
+		display.print("Core 1:");
+		display.write(core1RunTime);
+		display.print(" us");
+		hz = 1/((float)core1RunTime * 0.000001);
+		printf("Core 1: %d us, %f Hz\n", core1RunTime, hz);
+		display.write(hz, 2);
+		display.print(" Hz");
+
+		core1RunTime = time_us_32() - core1Time;
+	}
 }
 
 
 /**
  * @brief Main function
+ * @note This runs on the core 0
 */
 int main()
 {
@@ -490,29 +513,37 @@ int main()
 	ina219.setCalibration();
 	ina219.setBusVoltageRange(INA219_BUS_VOLTAGE_RANGE_32V);
 	ina219.setGain(INA219_GAIN_320MV);
-	ina219.setBusADCResolution(INA219_12BIT_532US);
-	ina219.setShuntADCResolution(INA219_12BIT_532US);
+	ina219.setBusADCResolution(INA219_64SAMPLES_34MS);
+	ina219.setShuntADCResolution(INA219_64SAMPLES_34MS);
 	ina219.setMode(INA219_MODE_SHUNT_AND_BUS_VOLTAGE_CONTINUOUS);
 	ina219.setData();
 
-	//display.clear();
-	//display.drawBitmap(Point(), BACKGROUND_PIXEL_DATA, BACKGROUND_WIDTH, BACKGROUND_HEIGHT);
-	
-	display.fill(Colors::Cum);
-	display.setCursor(Point(0, 20));
-	display.write("femboy\nboykisser\n\thi");
-	display.write("_you\n");
-	display.print("today is a good day!");
-	display.print("\tyes");
-	display.print('n');
-	display.print(420);
-	display.print(0.69f);
+	// setup the second core
+	multicore_launch_core1(core1Main);
 
+	// wait for the second core to be ready
+	uint g = multicore_fifo_pop_blocking();
+
+	// check if the second core is ready
+	if(g != MULTICORE_FLAG_VALUE)
+	{
+		// Enter an infinite loop if the second core is not ready
+		Error();
+	}
+	else
+	{
+		// tell the second core that we are ready
+		multicore_fifo_push_blocking(MULTICORE_FLAG_VALUE);
+	}
+
+	// run the main loop
 	while(1)
 	{
+		unsigned long core0Time = time_us_32();
 		heartBeat();
 		pollINA();
 		processUSBData();
 		buttonHandler();
+		core0RunTime = time_us_32() - core0Time;
 	}
 }

@@ -58,6 +58,9 @@
 #define DISP_OFFSET_Y1      0       // ut off on the bottom of the display
 #define DISP_ROTATION       0       // 0, 1, 2, or 3
 
+// System constants
+#define MULTICORE_FLAG_VALUE        0x69
+
 // default variables
 #define CURRENT_LIMIT_DEFAULT       3000    // mA
 #define CURRENT_SETTING_DEFAULT     1000    // mA
@@ -110,6 +113,7 @@
 #include "pico/stdlib.h"
 #include "pico/bootrom.h"
 #include "pico/binary_info.h"
+#include "pico/multicore.h"
 #include "hardware/uart.h"
 #include "hardware/i2c.h"
 #include "hardware/watchdog.h"
