@@ -500,7 +500,10 @@ int main()
 	
 	display.fill(Colors::Cum);
 	display.setCursor(Point(0, 20));
-	display.write("femboy\nboykisser\n\they", Colors::Black);
+	display.write("femboy\nboykisser\n\thi");
+	display.write("_you\n");
+	display.print("today is a good day!");
+	display.print("\tyes");
 
 	while(1)
 	{

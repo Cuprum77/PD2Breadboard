@@ -2,6 +2,10 @@
 
 #include "Display_Structs.hpp"
 
+/**
+ * @brief Colors enum
+ * @note Colors are 16-bit values
+*/
 typedef enum
 {
     Black = 0x0000,
@@ -140,5 +144,14 @@ struct Color
         this->b = b >> 3 & 0x1F;
 
         return *this;
+    }
+
+    /**
+     * @brief Gets the opposite color
+     * @return Opposite color
+    */
+    Color getOppositeColor()
+    {
+        return Color(0x1f - this->r, 0x3f - this->g, 0x1f - this->b);
     }
 };

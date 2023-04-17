@@ -492,12 +492,22 @@ void Display::drawBitmap(const unsigned short* bitmap, uint width, uint height)
 /**
  * @brief Write a character on the display
  * @param character Character to print
+ * @param size Size of the character
+*/
+void Display::write(const char* text, uint size)
+{
+    this->write(text, this->fillColor.getOppositeColor(), this->fillColor, size);
+}
+
+/**
+ * @brief Write a character on the display
+ * @param character Character to print
  * @param color Character color
  * @param size Size of the character
 */
 void Display::write(const char* text, Color color, uint size)
 {
-    this->print(text, color, this->fillColor, size);
+    this->write(text, color, this->fillColor, size);
 }
 
 /**
@@ -523,7 +533,7 @@ void Display::write(const char* text, Color color, Color background, uint size)
         // if the text is a new line, move the text to the next line
         if (text[i] == '\n')
         {
-            x = location.X();
+            x = 0;
             y += FONT_HEIGHT * size;
             continue;
         }
@@ -537,7 +547,7 @@ void Display::write(const char* text, Color color, Color background, uint size)
         else if ((x + FONT_WIDTH * size) > this->params.width)
         {
             // move the text to the next line
-            x = location.X();
+            x = 0;
             y += FONT_HEIGHT * size;
         }
 
@@ -547,6 +557,17 @@ void Display::write(const char* text, Color color, Color background, uint size)
 
     // set the cursor
     this->setCursor(Point(x, y));
+}
+
+
+/**
+ * @brief Print a character on the display
+ * @param character Character to print
+ * @param size Size of the character
+*/
+void Display::print(const char* text, uint size)
+{
+    this->print(text, this->fillColor.getOppositeColor(), this->fillColor, size);
 }
 
 /**
