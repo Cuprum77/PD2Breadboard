@@ -15,13 +15,22 @@
 
 #include "Font.h"
 
+
 #define uint unsigned int
+#define ushort unsigned short
 #define uchar unsigned char
 #define SPI_BAUDRATE 125000000  // 125 MHz
 
 #define min(x, y) (((x) < (y)) ? (x) : (y))
 #define max(x, y) (((x) > (y)) ? (x) : (y))
 #define sq(x) ((x) * (x))
+// Limit of the ST7789 driver
+#define ST7789_WIDTH 240
+#define ST7789_HEIGHT 320
+#define FRAMEBUFFER_SIZE (ST7789_WIDTH * ST7789_HEIGHT)
+// String behavior
+#define TAB_SIZE 4  // how many spaces a tab is worth
+
 
 class Display
 {
@@ -31,7 +40,7 @@ public:
     void clear();
     void displayOn();
     void displayOff();
-    void setCursor(Point Point);
+    void setCursor(Point point);
     Point getCenter();
 
     void fill(Color color);
@@ -44,16 +53,14 @@ public:
     void drawCircle(Point center, uint radius, Color color = Colors::White);
     void drawFilledCircle(Point center, uint radius, Color color = Colors::White);
 
-    void drawBitmap(Point point, const unsigned char* bitmap, uint width, uint height);
-    void drawBitmap(Point point, const unsigned short* bitmap, uint width, uint height);
+    void drawBitmap(const unsigned char* bitmap, uint width, uint height);
+    void drawBitmap(const unsigned short* bitmap, uint width, uint height);
 
-    void write(const char* text, Point Point, uint size = 3, Color color = Colors::White, Color background = Colors::Black);
-    void write(long long value, Point Point, uint size = 3, Color color = Colors::White, Color background = Colors::Black);
-    void write(double value, Point Point, uint size = 3, Color color = Colors::White, Color background = Colors::Black);
+    void write(const char* text, Color color = Colors::White, uint size = 1);
+    void write(const char* text, Color color, Color background, uint size = 1);
     
-    void print(const char* text, Point Point, uint size = 3, Color color = Colors::White, Color background = Colors::Black);
-    void print(long long value, Point Point, uint size = 3, Color color = Colors::White, Color background = Colors::Black);
-    void print(double value, Point Point, uint size = 3, Color color = Colors::White, Color background = Colors::Black);
+    void print(const char* text, Color color = Colors::White, uint size = 1);
+    void print(const char* text, Color color, Color background, uint size = 1);
 
     void setBrightness(unsigned char brightness);
 private:
@@ -64,6 +71,10 @@ private:
     uint sliceNum;
     uint pwmChannel;
     bool dataMode = false;
+    ushort frameBufferColumn[ST7789_WIDTH + 1] = {0};
+    ushort frameBuffer[FRAMEBUFFER_SIZE + 1] = {0};
+    Color fillColor;
+    Point cursor = {0, 0};
 
     void writeData(Display_Commands command, 
         const unsigned char* data, size_t length);

@@ -7,11 +7,20 @@ from textwrap import wrap
 # Define font file and color
 font_file = "RobotoMono-SemiBold.ttf"
 # Standard font sizes
-font_height = 20
-font_width = 20
+font_size = 24
 # Output directory
 output_dir = "../../lib/Display/Fonts/"
 
+# Grab the font
+font = ImageFont.truetype(font_file, font_size)
+# Get the widest character width (usually 'W' or 'M')
+char_box = font.getbbox("W")
+max_width = char_box[2] - char_box[0]
+# Calculate how much we need to crop the bitmap to get the actual character
+crop = int((font_size - max_width) / 2)
+# Get the tallest character height (usually '(' )
+char_box = font.getbbox("(")
+height_offset = int((font_size - char_box[3] - char_box[1]) / 2)
 
 # Function that takes the bad string.printables list and returns it in proper Ascii order
 def GetAscii():
@@ -25,28 +34,31 @@ def GetAscii():
 
 
 # Function that converts a character to a bitmap
-def Convert(char, width, height):
+def Convert(char, size):
     # Load font and create image object
-    font_size = width - 2
-    font = ImageFont.truetype(font_file, font_size)
-    image = Image.new('1', (width, height), color=0)
-
-    # Create draw object and draw text on image
-    draw = ImageDraw.Draw(image)
-    text_box = draw.textbbox((0, 0), char, font=font)
+    image = Image.new('1', (size, size), color=0)
+    # Get the font size
+    bounding_box = font.getbbox(char)
+    print(bounding_box)
 
     # Calculate offset to center text in bitmap
-    x_offset = int((width - text_box[2]) / 2)
-    y_offset = int((height - text_box[3]) / 2)
-    
+    x_offset = int((size - bounding_box[2] - bounding_box[0]) / 2)
+    # I genuinely cannot be bothered with figuring this out as of now
+    # So here we add a simple hack to fix the dumb letters that are too tall such as f and t
+    # If its between 97 and 122 its a lowercase letter and unless its a t or f, we need to increase the offset by 1
+    local_offset = height_offset
+    if 97 <= ord(char) <= 122 and char != 'f' and char != 't':
+        local_offset -= 1
+
     # Create image and draw text
-    image = Image.new('1', (width, height), color=0)
-    draw = ImageDraw.Draw(image)
-    draw.text((x_offset, y_offset), char, font=font, fill=1)
+    image = Image.new('1', (size, size), color=0)
+    draw = ImageDraw.Draw(image, mode='1')
+    draw.text((x_offset, local_offset), char, font=font, fill=1, antialias=True)
 
     # Convert image to numpy array and flatten
-    bitmap = np.array(image).flatten()
-    return bitmap
+    bitmap = np.array(image)
+    bitmap = bitmap[:, crop:-crop]
+    return bitmap.flatten(), int(size - crop * 2)
 
 
 # Function to compress the data
@@ -135,8 +147,9 @@ def Draw_Symbol(data, width):
         print(row)
 
 
-def Generate_File(width, height):
+def Generate_File(size):
     output_file = f"Font"
+    new_width = size
 
     # Get all Ascii characters
     AsciiList = GetAscii()
@@ -149,7 +162,8 @@ def Generate_File(width, height):
             continue
 
         # Convert character to bitmap
-        bitmap = Convert(char, width, height)
+        bitmap, new_width = Convert(char, size)
+
         bitmap = list(Compress(bitmap))
         Ascii.append(bitmap)
 
@@ -159,16 +173,16 @@ def Generate_File(width, height):
     # Output bitmap as C header file
     with open(output_dir + output_file + ".h", "w") as f:
         f.write("#pragma once\n\n")
+        memory_usage = len(AsciiList) * len(Ascii[0] * 4)   # We need to remember that a word is 4 bytes
+        f.write("// Estimated memory usage: {:,} bytes\n\n".format(memory_usage).replace(",", " "))
         f.write("// Number of characters\n")
-        f.write(f"#define FONT_CHAR\t\t\t{len(string.printable)}\n")
+        f.write(f"#define FONT_CHAR\t\t\t{len(AsciiList)}\n")
         f.write("// Number of bytes in a character\n")
         f.write(f"#define FONT_DATA\t\t\t{len(Ascii[0])}\n")
         f.write(f"// Font bitmap width\n")
-        f.write(f"#define FONT_WIDTH\t\t\t{width}\n")
+        f.write(f"#define FONT_WIDTH\t\t\t{new_width}\n")
         f.write(f"// Font bitmap height\n")
-        f.write(f"#define FONT_HEIGHT\t\t\t{height}\n")
-        f.write(f"// Font bitmap character spacing\n")
-        f.write(f"#define FONT_SPACING\t\t{int(width * 1/5)}\n")
+        f.write(f"#define FONT_HEIGHT\t\t\t{size}\n")
         f.write(f"// Font bitmap shortcut\n")
         f.write(f"#define FONT(character)\t\tfont_bitmap(character)\n\n")
         # Create the C constant
@@ -197,8 +211,7 @@ def Generate_File(width, height):
 
             # Sanity check
             print(f"{char}:")
-            Draw_Symbol(Ascii[index], width)
-
+            Draw_Symbol(Ascii[index], new_width)
             index += 1
 
         f.write("};\n\n")
@@ -211,4 +224,4 @@ def Generate_File(width, height):
 
 
 # Loop through each font size and generate a file
-Generate_File(font_width, font_height)
+Generate_File(font_size)

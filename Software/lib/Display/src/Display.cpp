@@ -122,6 +122,7 @@ Display::Display(spi_inst_t* spi, Display_Pins pins, Display_Params params, bool
 void Display::clear()
 {
     this->fill(Colors::Black);
+    this->fillColor = Colors::Black;
 }
 
 /**
@@ -146,18 +147,20 @@ void Display::displayOff()
  * @brief Set the cursor position
  * @param Point Point to set the cursor to
 */
-void Display::setCursor(Point Point)
+void Display::setCursor(Point point)
 {
     // set the pixel x address
     this->columnAddressSet(
-        Point.X() + this->params.columnOffset1, 
+        point.X() + this->params.columnOffset1, 
         (this->params.width - 1) + this->params.columnOffset2
     );
     // set the pixel y address
     this->rowAddressSet(
-        Point.Y() + this->params.rowOffset1, 
+        point.Y() + this->params.rowOffset1, 
         (this->params.height - 1) + this->params.rowOffset2
     );
+    // set the internal cursor position
+    this->cursor = point;
 }
 
 /**
@@ -196,6 +199,9 @@ void Display::fill(Color color)
     {
         this->writePixels(&color16, sizeof(color16));
     }
+
+    // set the fill color variable
+    this->fillColor = color;
 }
 
 /**
@@ -452,9 +458,9 @@ void Display::drawFilledCircle(Point center, uint radius, Color color)
  * @param width Width of the bitmap
  * @param height Height of the bitmap
 */
-void Display::drawBitmap(Point location, const uchar* bitmap, uint width, uint height)
+void Display::drawBitmap(const uchar* bitmap, uint width, uint height)
 {
-    this->drawBitmap(location, (const unsigned short*)bitmap, width, height);
+    this->drawBitmap((const unsigned short*)bitmap, width, height);
 }
 
 /**
@@ -464,8 +470,11 @@ void Display::drawBitmap(Point location, const uchar* bitmap, uint width, uint h
  * @param width Width of the bitmap
  * @param height Height of the bitmap
 */
-void Display::drawBitmap(Point location, const unsigned short* bitmap, uint width, uint height)
+void Display::drawBitmap(const unsigned short* bitmap, uint width, uint height)
 {
+    // get the cursor location
+    Point location = this->cursor;
+
     // write the bitmap
     int offset = 0;
     for(int y = 0; y < height; y++)
@@ -481,24 +490,87 @@ void Display::drawBitmap(Point location, const unsigned short* bitmap, uint widt
 
 
 /**
- * @brief Write text on the display
- * @param text Text to draw
- * @param Point Point to draw at
- * @param size Text size
- */
-void Display::print(const char* text, Point Point, uint size, Color color, Color background)
+ * @brief Write a character on the display
+ * @param character Character to print
+ * @param color Character color
+ * @param size Size of the character
+*/
+void Display::write(const char* text, Color color, uint size)
+{
+    this->print(text, color, this->fillColor, size);
+}
+
+/**
+ * @brief Write a character on the display
+ * @param character Character to print
+ * @param color Character color
+ * @param background Background color
+ * @param size Size of the character
+*/
+void Display::write(const char* text, Color color, Color background, uint size)
 {
     // copy the Point to local variables
-    int x = Point.X();
-    int y = Point.Y();
+    Point location = this->cursor;
+    // copy the Point to local variables
+    uint x = location.X();
+    uint y = location.Y();
     // get the length of the text
     uint length = strlen(text);
 
+    // loop through the text
     for(int i = 0; i < length; i++)
     {
+        // if the text is a new line, move the text to the next line
+        if (text[i] == '\n')
+        {
+            x = location.X();
+            y += FONT_HEIGHT * size;
+            continue;
+        }
+        // if the text is a tab move the text to the next tab stop
+        else if (text[i] == '\t')
+        {
+            x += FONT_WIDTH * size * TAB_SIZE;
+            continue;
+        }
+        // check if the text is going to go off the screen by checking the future x Point with the width of the screen
+        else if ((x + FONT_WIDTH * size) > this->params.width)
+        {
+            // move the text to the next line
+            x = location.X();
+            y += FONT_HEIGHT * size;
+        }
+
         // increment the Point
         x += this->drawAscii(text[i], {x, y}, size, color, background);
     }
+
+    // set the cursor
+    this->setCursor(Point(x, y));
+}
+
+/**
+ * @brief Print a character on the display
+ * @param character Character to print
+ * @param color Character color
+ * @param size Size of the character
+*/
+void Display::print(const char* text, Color color, uint size)
+{
+    this->print(text, color, this->fillColor, size);
+}
+
+/**
+ * @brief Print a character on the display
+ * @param character Character to print
+ * @param color Character color
+ * @param background Background color
+ * @param size Size of the character
+*/
+void Display::print(const char* text, Color color, Color background, uint size)
+{
+    this->write(text, color, background, size);
+    this->write("\n", color, background, size);
 }
 
 
@@ -659,13 +731,25 @@ uint Display::drawAscii(const char character, Point point, uint size, Color colo
     if (bitmap == nullptr)
         return 0;
 
-    // create a pixel buffer
-    unsigned short buffer[FONT_WIDTH * FONT_HEIGHT + 1];
-    unsigned int offset = 0;
+    // check if size is 0
+    if (size == 0)
+        size = 1;
+
+    // make sure the font size will not overflow the buffer
+    if((FONT_WIDTH * FONT_HEIGHT) * size > sizeof(this->frameBuffer))
+        return 0;
+
+    // keep track of the row position
+    uint rowPosition = 0;
+    // keep track of the column position
+    uint columnPosition = 0;
+    // save the row size
+    uint rowSize = FONT_WIDTH * size;
 
     // loop through the bitmap data
     for(int j = 0; j < FONT_DATA; j++)
     {
+        // get the current data
         uint data = bitmap[j];
 
         // if the current data is 0, we have completed our loop
@@ -673,20 +757,44 @@ uint Display::drawAscii(const char character, Point point, uint size, Color colo
             break;
 
         // set the color of the pixel based on the index
-        Color pixel = (j & 0x1) ? color : background;
+        // this works by checking if the least significant bit is 1 or 0
+        // if it is 1, the pixel is the foreground color, otherwise it is the background color
+        uint pixel = ((j & 0x1) ? color : background).to16bit();
+
+        // multiply the data length by the size
+        data *= size;
 
         // add the number of pixels to the buffer as specified by the data
         for(int i = 0; i < data; i++)
         {
-            buffer[i + offset] = pixel.to16bit();
-        }
+            // add the pixel to the buffer
+            this->frameBufferColumn[rowPosition++] = pixel;
 
-        offset += data;
+            // check if we have reached the end of the row
+            if (rowPosition == rowSize)
+            {
+                // reset the row position
+                rowPosition = 0;
+
+                // copy the column to the buffer as many times as specified by the size
+                for(int j = 0; j < size; j++)
+                {
+                    // copy the column to the buffer
+                    memcpy(&this->frameBuffer[(columnPosition * rowSize)], this->frameBufferColumn, rowSize * sizeof(unsigned short));
+                    columnPosition++;
+                }
+
+                // reset the column
+                memset(this->frameBufferColumn, 0, sizeof(this->frameBufferColumn));
+            }
+        }
     }
 
+    // set the cursor position
+    this->setCursor(point);
     // write the pixels to the display
-    this->drawBitmap(point, buffer, FONT_WIDTH, FONT_HEIGHT);
+    this->drawBitmap(this->frameBuffer, (FONT_WIDTH * size), (FONT_HEIGHT * size));
 
     // return the character width
-    return FONT_WIDTH - FONT_SPACING;
+    return FONT_WIDTH * size;
 }

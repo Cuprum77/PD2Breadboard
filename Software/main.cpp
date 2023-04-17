@@ -495,9 +495,12 @@ int main()
 	ina219.setMode(INA219_MODE_SHUNT_AND_BUS_VOLTAGE_CONTINUOUS);
 	ina219.setData();
 
-	display.clear();
+	//display.clear();
 	//display.drawBitmap(Point(), BACKGROUND_PIXEL_DATA, BACKGROUND_WIDTH, BACKGROUND_HEIGHT);
-	display.print("boykisser", Point(0, 34));
+	
+	display.fill(Colors::Cum);
+	display.setCursor(Point(0, 20));
+	display.write("femboy\nboykisser\n\they", Colors::Black);
 
 	while(1)
 	{
