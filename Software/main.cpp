@@ -504,6 +504,7 @@ int main()
 	display.write("_you\n");
 	display.print("today is a good day!");
 	display.print("\tyes");
+	display.print('n');
 
 	while(1)
 	{

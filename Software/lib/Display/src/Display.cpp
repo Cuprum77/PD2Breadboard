@@ -491,6 +491,16 @@ void Display::drawBitmap(const unsigned short* bitmap, uint width, uint height)
 
 /**
  * @brief Write a character on the display
+ * @param c Character to print
+ * @param size Size of the character
+*/
+void Display::write(char c, uint size)
+{
+    this->write(&c, this->fillColor.getOppositeColor(), this->fillColor, size);
+}
+
+/**
+ * @brief Write a character on the display
  * @param character Character to print
  * @param size Size of the character
 */
@@ -559,6 +569,16 @@ void Display::write(const char* text, Color color, Color background, uint size)
     this->setCursor(Point(x, y));
 }
 
+
+/**
+ * @brief Print a character on the display
+ * @param c Character to print
+ * @param size Size of the character
+*/
+void Display::print(char c, uint size)
+{
+    this->print(&c, this->fillColor.getOppositeColor(), this->fillColor, size);
+}
 
 /**
  * @brief Print a character on the display

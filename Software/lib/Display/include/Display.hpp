@@ -56,10 +56,12 @@ public:
     void drawBitmap(const unsigned char* bitmap, uint width, uint height);
     void drawBitmap(const unsigned short* bitmap, uint width, uint height);
 
+    void write(char c, uint size = 1);
     void write(const char* text, uint size = 1);
     void write(const char* text, Color color, uint size = 1);
     void write(const char* text, Color color, Color background, uint size = 1);
     
+    void print(char c, uint size = 1);
     void print(const char* text, uint size = 1);
     void print(const char* text, Color color, uint size = 1);
     void print(const char* text, Color color, Color background, uint size = 1);
