@@ -165,6 +165,15 @@ void Display::setCursor(Point point)
 }
 
 /**
+ * @brief Get the cursor position
+ * @return Point The cursor position
+*/
+Point Display::getCursor()
+{
+    return this->cursor;
+}
+
+/**
  * @brief Get the center of the display
  * @return Point The center of the display
 */
@@ -186,11 +195,9 @@ void Display::fill(Color color)
 {
     // convert color to 16 bit
     unsigned short color16 = color.to16bit();
-    
+
     // calculate the number of pixels and take the offset into account
-    int numPixels = 
-        (this->params.width + (this->params.columnOffset1 + this->params.columnOffset2)) * 
-        (this->params.height + (this->params.rowOffset1 + this->params.rowOffset2));
+    int numPixels = this->params.width * this->params.height;
     // set the cursor position to the top left
     Point Point = {0, 0};
     this->setCursor(Point);

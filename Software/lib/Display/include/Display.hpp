@@ -30,6 +30,9 @@
 // SPI
 #define SPI_BAUDRATE 125000000  // 125 MHz
 
+// Constants
+#define CHARACTER_BUFFER_SIZE 128
+
 #define min(x, y) (((x) < (y)) ? (x) : (y))
 #define max(x, y) (((x) > (y)) ? (x) : (y))
 #define sq(x) ((x) * (x))
@@ -46,11 +49,12 @@ class Display
 public:
     Display(spi_inst_t* spi, Display_Pins pins, 
         Display_Params params, bool dimming = false);
-    void clear();
-    void displayOn();
-    void displayOff();
+    void clear(void);
+    void displayOn(void);
+    void displayOff(void);
     void setCursor(Point point);
-    Point getCenter();
+    Point getCursor(void);
+    Point getCenter(void);
 
     void fill(Color color);
     void drawPixel(Point Point, Color color);
@@ -150,9 +154,10 @@ private:
         const unsigned char* data, size_t length);
     void columnAddressSet(uint x0, uint x1);
     void rowAddressSet(uint y0, uint y1);
-    void memoryWrite();
+    void memoryWrite(void);
     void writePixels(const unsigned short* data, size_t length);
     
     uint drawAscii(const char c, Point Point, uint size, Color color, Color background);
     void floatToString(double num, char* buffer, uint precision);
+    void reverse(char* str, uint length);
 };

@@ -69,12 +69,30 @@ public:
     }
 
     /**
+     * @brief Set the X coordinate of the point
+     * @param x X coordinate of the point
+    */
+    void X(int x)
+    {
+        this->x = x;
+    }
+
+    /**
      * @brief Get the Y coordinate of the point
      * @return int Y coordinate of the point
     */
     int Y()
     {
         return this->y;
+    }
+
+    /**
+     * @brief Set the Y coordinate of the point
+     * @param y Y coordinate of the point
+    */
+    void Y(int y)
+    {
+        this->y = y;
     }
 
 

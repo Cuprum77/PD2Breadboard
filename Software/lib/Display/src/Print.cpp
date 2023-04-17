@@ -175,7 +175,7 @@ void Display::write(long number, Color color, Color backgroundColor, uchar size,
 {
     // set base to decimal 
     // convert the number to a string
-    char buffer[65];
+    char buffer[CHARACTER_BUFFER_SIZE];
     itoa(number, buffer, base);
     // write the string
     this->write(buffer, color, backgroundColor, size);
@@ -214,7 +214,7 @@ void Display::write(ulong number, Color color, uchar size, uchar base)
 void Display::write(ulong number, Color color, Color backgroundColor, uchar size, uchar base)
 {
     // convert the number to a string
-    char buffer[65];    // largest number a long can represent is 9 223 372 036 854 775 807
+    char buffer[CHARACTER_BUFFER_SIZE];    // largest number a long can represent is 9 223 372 036 854 775 807
     itoa(number, buffer, base);
     // write the string
     this->write(buffer, color, backgroundColor, size);
@@ -256,7 +256,7 @@ void Display::write(double number, Color color, uint precision, uchar size)
 void Display::write(double number, Color color, Color backgroundColor, uint precision, uchar size)
 {
     // convert the number to a string
-    char buffer[65] = {0};    // largest number a double can represent is 1.79769e+308
+    char buffer[CHARACTER_BUFFER_SIZE] = {0};    // largest number a double can represent is 1.79769e+308
     this->floatToString(number, buffer, precision);
     // write the string
     this->write(buffer, color, backgroundColor, size);
@@ -512,7 +512,7 @@ void Display::print(long number, Color color, uchar size, uchar base)
 void Display::print(long number, Color color, Color backgroundColor, uchar size, uchar base)
 {
     // convert the number to a string
-    char buffer[65];    // largest number a long can represent is 9 223 372 036 854 775 807
+    char buffer[CHARACTER_BUFFER_SIZE];    // largest number a long can represent is 9 223 372 036 854 775 807
     itoa(number, buffer, base);
     // write the string
     this->print(buffer, color, backgroundColor, size);
@@ -551,7 +551,7 @@ void Display::print(ulong number, Color color, uchar size, uchar base)
 void Display::print(ulong number, Color color, Color backgroundColor, uchar size, uchar base)
 {
     // convert the number to a string
-    char buffer[65];    // largest number a long can represent is 9 223 372 036 854 775 807
+    char buffer[CHARACTER_BUFFER_SIZE];    // largest number a long can represent is 9 223 372 036 854 775 807
     itoa(number, buffer, base);
     // write the string
     this->print(buffer, color, backgroundColor, size);
@@ -653,6 +653,13 @@ void Display::print(void)
 */
 void Display::floatToString(double num, char* buffer, uint precision)
 {
+    // if precision is 0, just return the integer part
+    if(precision == 0)
+    {
+        itoa((long)num, buffer, 10);
+        return;
+    }
+
     // print the sign if the number is negative
 	if(num < 0.0)
 	{
@@ -670,12 +677,19 @@ void Display::floatToString(double num, char* buffer, uint precision)
 	unsigned long integer = (unsigned long)num;
 	double remainder = num - (double)integer;
 
-    // add the interger part to the buffer
+    // store the number of integers for fast reversing later
+    uint integers = 0;
+    // loop until the integer is 0 at least once
     do
     {
+        // add the first digit to the buffer
         *buffer++ = '0' + (integer % 10);
         integer /= 10;
+        integers++;
     } while(integer > 0);
+
+    // reverse the buffer to get the correct order
+    this->reverse(buffer - integers, integers);
 
 	// print the decimal point
 	if(precision > 0)
@@ -688,6 +702,16 @@ void Display::floatToString(double num, char* buffer, uint precision)
 		int digit = int(remainder);
         *buffer++ = '0' + digit;
 		remainder -= digit;
+        integers++;
 	}
+}
+
+void Display::reverse(char* buffer, uint length)
+{
+    for(int i = 0; i < length/2; i++) {
+        char temp = *(buffer + i);
+        *(buffer + i) = *(buffer + length - i - 1);
+        *(buffer + length - i - 1) = temp;
+    }
 }
 #pragma endregion
