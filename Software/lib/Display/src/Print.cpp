@@ -256,7 +256,7 @@ void Display::write(double number, Color color, uint precision, uchar size)
 void Display::write(double number, Color color, Color backgroundColor, uint precision, uchar size)
 {
     // convert the number to a string
-    char buffer[33];    // largest number a double can represent is 1.79769e+308
+    char buffer[65] = {0};    // largest number a double can represent is 1.79769e+308
     this->floatToString(number, buffer, precision);
     // write the string
     this->write(buffer, color, backgroundColor, size);
@@ -592,11 +592,8 @@ void Display::print(double number, Color color, uint precision, uchar size)
 */
 void Display::print(double number, Color color, Color backgroundColor, uint precision, uchar size)
 {
-    // convert the number to a string
-    char buffer[33];    // largest number a double can represent is 1.79769e+308
-    this->floatToString(number, buffer, precision);
-    // write the string
-    this->print(buffer, color, backgroundColor, size);
+    this->write(number, color, backgroundColor, precision, size);
+    this->write("\n");
 }
 #pragma endregion
 
@@ -685,12 +682,12 @@ void Display::floatToString(double num, char* buffer, uint precision)
 		*buffer++ = '.';
 
 	// print the decimal part
-	do
+	while(precision-- > 0)
 	{
 		remainder *= 10.0;
 		int digit = int(remainder);
         *buffer++ = '0' + digit;
 		remainder -= digit;
-	} while(precision-- > 0);
+	}
 }
 #pragma endregion
