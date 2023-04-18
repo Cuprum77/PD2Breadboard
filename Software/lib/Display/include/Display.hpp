@@ -22,6 +22,8 @@
 #define uint unsigned int
 #define ushort unsigned short
 #define uchar unsigned char
+
+// Typedefs for number bases
 #define BIN 2
 #define OCT 8
 #define DEC 10

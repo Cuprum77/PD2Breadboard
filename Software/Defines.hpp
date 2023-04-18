@@ -58,6 +58,10 @@
 #define DISP_OFFSET_Y1      0       // ut off on the bottom of the display
 #define DISP_ROTATION       0       // 0, 1, 2, or 3
 
+// I2C constants
+#define I2C0_SPEED          1000000  // 1 MHz
+#define I2C1_SPEED          1000000  // 1 MHz
+
 // System constants
 #define MULTICORE_FLAG_VALUE        0x69
 

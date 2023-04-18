@@ -715,3 +715,91 @@ void Display::reverse(char* buffer, uint length)
     }
 }
 #pragma endregion
+
+#pragma region Write Ascii to display
+/**
+ * @private
+ * @brief Draw an ascii character on the display
+ * @param character Character to draw
+ * @param Point Point to draw at
+ * @param size Text size
+ * @param color Color to draw the character
+ * @return Width of the character
+*/
+uint Display::drawAscii(const char character, Point point, uint size, Color color, Color background)
+{
+    // get the relevant bitmap data which is indexed according to the ascii table
+    const uint* bitmap = FONT(character);
+
+    // if the bitmap is a null pointer, return
+    if (bitmap == nullptr)
+        return 0;
+
+    // check if size is 0
+    if (size == 0)
+        size = 1;
+
+    // make sure the font size will not overflow the buffer
+    if((FONT_WIDTH * FONT_HEIGHT) * size > sizeof(this->frameBuffer))
+        return 0;
+
+    // keep track of the row position
+    uint rowPosition = 0;
+    // keep track of the column position
+    uint columnPosition = 0;
+    // save the row size
+    uint rowSize = FONT_WIDTH * size;
+
+    // loop through the bitmap data
+    for(int j = 0; j < FONT_DATA; j++)
+    {
+        // get the current data
+        uint data = bitmap[j];
+
+        // if the current data is 0, we have completed our loop
+        if (data == 0)
+            break;
+
+        // set the color of the pixel based on the index
+        // this works by checking if the least significant bit is 1 or 0
+        // if it is 1, the pixel is the foreground color, otherwise it is the background color
+        uint pixel = ((j & 0x1) ? color : background).to16bit();
+
+        // multiply the data length by the size
+        data *= size;
+
+        // add the number of pixels to the buffer as specified by the data
+        for(int i = 0; i < data; i++)
+        {
+            // add the pixel to the buffer
+            this->frameBufferColumn[rowPosition++] = pixel;
+
+            // check if we have reached the end of the row
+            if (rowPosition == rowSize)
+            {
+                // reset the row position
+                rowPosition = 0;
+
+                // copy the column to the buffer as many times as specified by the size
+                for(int j = 0; j < size; j++)
+                {
+                    // copy the column to the buffer
+                    memcpy(&this->frameBuffer[(columnPosition * rowSize)], this->frameBufferColumn, rowSize * sizeof(unsigned short));
+                    columnPosition++;
+                }
+
+                // reset the column
+                memset(this->frameBufferColumn, 0, sizeof(this->frameBufferColumn));
+            }
+        }
+    }
+
+    // set the cursor position
+    this->setCursor(point);
+    // write the pixels to the display
+    this->drawBitmap(this->frameBuffer, (FONT_WIDTH * size), (FONT_HEIGHT * size));
+
+    // return the character width
+    return FONT_WIDTH * size;
+}
+#pragma endregion

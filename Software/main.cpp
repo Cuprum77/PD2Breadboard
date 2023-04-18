@@ -10,6 +10,10 @@ unsigned int backlightBrightness = BACKLIGHT_DEFAULT;
 unsigned long core0RunTime = 0;
 unsigned long core1RunTime = 0;
 
+// overcurrent boolean
+bool overcurrent = false;
+bool outputEnabled = false;
+
 // set the display parameters
 // the ifdefs are used to prevent the intellisense from complaining about the variables not being defined
 Display_Pins displayPins = {
@@ -54,7 +58,7 @@ void initI2C()
 	gpio_set_function(I2C0_SCL, GPIO_FUNC_I2C);
 	gpio_pull_up(I2C0_SDA);
 	gpio_pull_up(I2C0_SCL);
-	i2c_init(i2c0, 400000);
+	i2c_init(i2c0, I2C0_SPEED);
 	// set the binary data to show the pins used for I2C0
 	bi_decl(bi_2pins_with_func(I2C0_SDA, I2C0_SCL, GPIO_FUNC_I2C));
 
@@ -63,7 +67,7 @@ void initI2C()
 	gpio_set_function(I2C1_SCL, GPIO_FUNC_I2C);
 	gpio_pull_up(I2C1_SDA);
 	gpio_pull_up(I2C1_SCL);
-	i2c_init(i2c1, 400000);
+	i2c_init(i2c1, I2C1_SPEED);
 	// set the binary data to show the pins used for I2C1
 	bi_decl(bi_2pins_with_func(I2C1_SDA, I2C1_SCL, GPIO_FUNC_I2C));
 }
@@ -167,6 +171,46 @@ void heartBeat()
 	// set the last debounce time
 	lastDebounceTime = time_us_32();
 	ledState = !ledState;
+}
+
+// pattern data
+unsigned long lastWarningBlink = 0;
+bool ledStates = false;
+const long blinkIntervalSequence[4] = { 100000, 62500, 100000, 600000};
+/**
+ * @brief Blink both LEDs on the board in a pattern if the current is too high!
+ * @note Has to be called every loop
+*/
+void overCurrentLEDs()
+{
+	static int overCurrentSequenceIndex = 0;
+
+	// if we are not over current, reset the sequence index
+	if(!overcurrent && ledStates)
+	{
+		ledStates = false;
+		overCurrentSequenceIndex = 0;
+		gpio_put(LEFT_MOSFET_LED, ledStates);
+		gpio_put(RIGHT_MOSFET_LED, ledStates);
+	}
+
+	// if we havent reached our current interval yet, return
+	if(((time_us_32() - lastWarningBlink) < blinkIntervalSequence[overCurrentSequenceIndex]) || !overcurrent)
+		return;
+	
+	// increment the sequence index
+	overCurrentSequenceIndex++;
+
+	// if we have reached the end of the sequence, reset the index
+	if(overCurrentSequenceIndex > 3)
+		overCurrentSequenceIndex = 0;
+
+	// toggle the LED
+	gpio_put(LEFT_MOSFET_LED, ledStates);
+	gpio_put(RIGHT_MOSFET_LED, ledStates);
+	// set the last debounce time
+	lastWarningBlink = time_us_32();
+	ledStates = !ledStates;
 }
 
 /**
@@ -370,14 +414,15 @@ void buttonHandler()
 	}
 	if(buttonMenu.isHeld())
 	{
-		gpio_put(LEFT_MOSFET_LED, 0);
-		gpio_put(LEFT_MOSFET, 0);
+
+		static bool state = false;
+		state = !state;
+		gpio_put(LEFT_MOSFET, state);
+		gpio_put(RIGHT_MOSFET, state);
 		printf("MENU held\n");
 	}
 	if(buttonMenu.isClicked())
 	{
-		gpio_put(LEFT_MOSFET_LED, 1);
-		gpio_put(LEFT_MOSFET, 1);
 		printf("MENU\n");
 	}
 	if(buttonDown.isLongPressed())
@@ -391,20 +436,16 @@ void buttonHandler()
 	}
 	if(buttonDown.isClicked())
 	{
+		voltageNegotiated -= 20;
 		printf("DOWN\n");
 	}
 	if(buttonUp.isHeld())
 	{
-		gpio_put(RIGHT_MOSFET_LED, 0);
-		gpio_put(RIGHT_MOSFET, 0);
-
 		printf("UP held\n");
 	}
 	if(buttonUp.isClicked())
 	{
-		gpio_put(RIGHT_MOSFET_LED, 1);
-		gpio_put(RIGHT_MOSFET, 1);
-
+		voltageNegotiated += 20;
 		printf("UP\n");
 	}
 
@@ -452,47 +493,46 @@ void core1Main()
 	display.fill(Colors::RaspberryRed);
 	//display.drawBitmap(Point(), BACKGROUND_PIXEL_DATA, BACKGROUND_WIDTH, BACKGROUND_HEIGHT);
 	
-	Point amps = Point(0, 20);
-	Point volts = Point(0, 20 + FONT_HEIGHT);
-	Point watts = Point(0, 20 + FONT_HEIGHT * 2);
+	Point start = Point(0, 20);
 
 	unsigned long lastUpdate = 0;
 	while(1)
 	{
 		unsigned long core1Time = time_us_32();
-		display.setCursor(amps);
+		display.setCursor(start);
 		display.write(ina219.getCurrent() / 1000, 2);
+		display.write("/");
+		display.write((float)currentLimit / 1000);
 		display.print("A");
-
-		display.setCursor(volts);
 		display.write(ina219.getVoltage(), 2);
+		display.write("/");
+		display.write((float)voltageNegotiated / 1000);
 		display.print("V");
-
-		display.setCursor(watts);
 		display.write(ina219.getPower() / 1000, 2);
 		display.print("W\n");
 
-		if(core1RunTime == 0)
-		{
-			core1RunTime = time_us_32() - core1Time;
-			continue;
-		}
-
-		display.print("Core 0:");
-		display.write(core0RunTime);
-		display.print(" us");
-		double hz = 1/((float)core0RunTime * 0.000001);
-		display.write(hz, 2);
-		display.print(" Hz\n");
-		display.print("Core 1:");
-		display.write(core1RunTime);
-		display.print(" us");
-		hz = 1/((float)core1RunTime * 0.000001);
-		printf("Core 1: %d us, %f Hz\n", core1RunTime, hz);
-		display.write(hz, 2);
-		display.print(" Hz");
-
 		core1RunTime = time_us_32() - core1Time;
+		display.write("C0:");
+		double hz = 1/((float)core0RunTime * 0.000001)/1000;
+		display.write(hz, 2);
+		display.print("kHz");
+		display.write("     ");
+		display.write(core0RunTime);
+		display.print("us");
+		display.write("C1:");
+		hz = 1/((float)core1RunTime * 0.000001);
+		display.write(hz, 2);
+		display.print("Hz");
+		display.write("   ");
+		display.write((float)core1RunTime / 1000);
+		display.print("ms");
+
+		// redo the background every 5 seconds
+		if((time_us_32() - lastUpdate) > 5000000)
+		{
+			display.fill(Colors::RaspberryRed);
+			lastUpdate = time_us_32();
+		}
 	}
 }
 
@@ -544,6 +584,13 @@ int main()
 		pollINA();
 		processUSBData();
 		buttonHandler();
+		overCurrentLEDs();
+
+		if(ina219.getCurrent() > currentLimit)
+			overcurrent = true;
+		else if (ina219.getCurrent() < (float)currentLimit * 0.8)
+			overcurrent = false;
+
 		core0RunTime = time_us_32() - core0Time;
 	}
 }

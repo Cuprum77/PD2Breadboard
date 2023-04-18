@@ -18,21 +18,19 @@ Display::Display(spi_inst_t* spi, Display_Pins pins, Display_Params params, bool
     // set the pins to SPI function
     gpio_set_function(this->pins.sda, GPIO_FUNC_SPI);
     gpio_set_function(this->pins.scl, GPIO_FUNC_SPI);
+    gpio_set_function(this->pins.cs, GPIO_FUNC_SPI);
 
     // init the rest of the pins
     gpio_init(this->pins.rst);
     gpio_init(this->pins.dc);
-    gpio_init(this->pins.cs);
 
     // set the rest of the pins to GPIO output
     gpio_set_dir(this->pins.rst, GPIO_OUT);
     gpio_set_dir(this->pins.dc, GPIO_OUT);
-    gpio_set_dir(this->pins.cs, GPIO_OUT);
 
     // set the pins to high
     gpio_put(this->pins.rst, 1);
     gpio_put(this->pins.dc, 1);
-    gpio_put(this->pins.cs, 1);
 
     // set up the backlight pin depending on the dimming setting
     if(dimming)
@@ -122,7 +120,6 @@ Display::Display(spi_inst_t* spi, Display_Pins pins, Display_Params params, bool
 void Display::clear()
 {
     this->fill(Colors::Black);
-    this->fillColor = Colors::Black;
     this->setCursor({0, 0});
 }
 
@@ -201,12 +198,15 @@ void Display::fill(Color color)
     // set the cursor position to the top left
     Point Point = {0, 0};
     this->setCursor(Point);
-    
-    // write the pixels
+
+    // fill the frame buffer
     for(int i = 0; i < numPixels; i++)
     {
-        this->writePixels(&color16, sizeof(color16));
+        this->frameBuffer[i] = color16;
     }
+
+    // write the pixels to the display
+    this->writePixels(this->frameBuffer, numPixels * sizeof(color16));
 
     // set the fill color variable
     this->fillColor = color;
@@ -532,29 +532,19 @@ void Display::writeData(Display_Commands command, const uchar* data, size_t leng
     spi_set_format(this->spi, 8, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
     this->dataMode = false;
 
-    sleep_us(1);
     // set the display to write mode
-    gpio_put(this->pins.cs, 0);
     gpio_put(this->pins.dc, 0);
-    sleep_us(1);
 
     // send the command
     uchar commandByte = (uchar)command;
     spi_write_blocking(this->spi, &commandByte, sizeof(commandByte));
 
     // send the data
-    sleep_us(1);
     gpio_put(this->pins.dc, 1);
     if (length)
     {
-        sleep_us(1);
         spi_write_blocking(this->spi, data, length);
     }
-
-    sleep_us(1);
-    gpio_put(this->pins.cs, 1);
-    gpio_put(this->pins.dc, 1);
-    sleep_us(1);
 }
 
 /**
@@ -603,19 +593,13 @@ void Display::rowAddressSet(uint y0, uint y1)
 */
 void Display::memoryWrite()
 {
-    sleep_us(1);
-    gpio_put(this->pins.cs, 0);
     gpio_put(this->pins.dc, 0);
-    sleep_us(1);
 
     // memory write
     uchar command = (uchar)Display_Commands::RAMWR;
     spi_write_blocking(this->spi, &command, sizeof(command));
 
-    sleep_us(1);
-    gpio_put(this->pins.cs, 0);
     gpio_put(this->pins.dc, 1);
-    sleep_us(1);
 }
 
 /**
@@ -634,90 +618,4 @@ void Display::writePixels(const unsigned short* data, size_t length)
     }
 
     spi_write16_blocking(this->spi, data, length / 2);
-}
-
-/**
- * @private
- * @brief Draw an ascii character on the display
- * @param character Character to draw
- * @param Point Point to draw at
- * @param size Text size
- * @param color Color to draw the character
- * @return Width of the character
-*/
-uint Display::drawAscii(const char character, Point point, uint size, Color color, Color background)
-{
-    // get the relevant bitmap data which is indexed according to the ascii table
-    const uint* bitmap = FONT(character);
-
-    // if the bitmap is a null pointer, return
-    if (bitmap == nullptr)
-        return 0;
-
-    // check if size is 0
-    if (size == 0)
-        size = 1;
-
-    // make sure the font size will not overflow the buffer
-    if((FONT_WIDTH * FONT_HEIGHT) * size > sizeof(this->frameBuffer))
-        return 0;
-
-    // keep track of the row position
-    uint rowPosition = 0;
-    // keep track of the column position
-    uint columnPosition = 0;
-    // save the row size
-    uint rowSize = FONT_WIDTH * size;
-
-    // loop through the bitmap data
-    for(int j = 0; j < FONT_DATA; j++)
-    {
-        // get the current data
-        uint data = bitmap[j];
-
-        // if the current data is 0, we have completed our loop
-        if (data == 0)
-            break;
-
-        // set the color of the pixel based on the index
-        // this works by checking if the least significant bit is 1 or 0
-        // if it is 1, the pixel is the foreground color, otherwise it is the background color
-        uint pixel = ((j & 0x1) ? color : background).to16bit();
-
-        // multiply the data length by the size
-        data *= size;
-
-        // add the number of pixels to the buffer as specified by the data
-        for(int i = 0; i < data; i++)
-        {
-            // add the pixel to the buffer
-            this->frameBufferColumn[rowPosition++] = pixel;
-
-            // check if we have reached the end of the row
-            if (rowPosition == rowSize)
-            {
-                // reset the row position
-                rowPosition = 0;
-
-                // copy the column to the buffer as many times as specified by the size
-                for(int j = 0; j < size; j++)
-                {
-                    // copy the column to the buffer
-                    memcpy(&this->frameBuffer[(columnPosition * rowSize)], this->frameBufferColumn, rowSize * sizeof(unsigned short));
-                    columnPosition++;
-                }
-
-                // reset the column
-                memset(this->frameBufferColumn, 0, sizeof(this->frameBufferColumn));
-            }
-        }
-    }
-
-    // set the cursor position
-    this->setCursor(point);
-    // write the pixels to the display
-    this->drawBitmap(this->frameBuffer, (FONT_WIDTH * size), (FONT_HEIGHT * size));
-
-    // return the character width
-    return FONT_WIDTH * size;
 }
