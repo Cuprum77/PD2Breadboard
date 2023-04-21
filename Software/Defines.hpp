@@ -65,11 +65,13 @@
 // System constants
 #define MULTICORE_FLAG_VALUE        0x69
 
-// default variables
+// default values
 #define CURRENT_LIMIT_DEFAULT       3000    // mA
 #define CURRENT_SETTING_DEFAULT     1000    // mA
 #define VOLTAGE_SETTING_DEFAULT     5000    // mV
 #define BACKLIGHT_DEFAULT           255     // 0-255
+#define VOLTAGE_STEPS               20      // USB PPS voltage steps in mV
+#define CURRENT_STEPS               50      // USB PPS current steps in mA
 
 // serial interface codes
 #define REBOOT_TO_BOOTLOADER_CODE   "reboot_to_bootloader"

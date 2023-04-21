@@ -436,7 +436,7 @@ void buttonHandler()
 	}
 	if(buttonDown.isClicked())
 	{
-		voltageNegotiated -= 20;
+		currentLimit -= CURRENT_STEPS;
 		printf("DOWN\n");
 	}
 	if(buttonUp.isHeld())
@@ -445,7 +445,7 @@ void buttonHandler()
 	}
 	if(buttonUp.isClicked())
 	{
-		voltageNegotiated += 20;
+		currentLimit += CURRENT_STEPS;
 		printf("UP\n");
 	}
 
@@ -465,6 +465,7 @@ void pollINA()
 		return;
 
 	ina219.getData();
+	lastPolling = time_us_32();
 }
 
 /**
@@ -512,18 +513,16 @@ void core1Main()
 		display.print("W\n");
 
 		core1RunTime = time_us_32() - core1Time;
-		display.write("C0:");
+		display.print("C0:");
 		double hz = 1/((float)core0RunTime * 0.000001)/1000;
 		display.write(hz, 2);
 		display.print("kHz");
-		display.write("     ");
 		display.write(core0RunTime);
 		display.print("us");
-		display.write("C1:");
+		display.print("\nC1:");
 		hz = 1/((float)core1RunTime * 0.000001);
 		display.write(hz, 2);
 		display.print("Hz");
-		display.write("   ");
 		display.write((float)core1RunTime / 1000);
 		display.print("ms");
 
