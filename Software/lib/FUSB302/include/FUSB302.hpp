@@ -9,6 +9,16 @@
 
 class FUSB302
 {
+public:
+    FUSB302(unsigned char address, i2c_inst_t* wire);
+
+    void enablePPS();
+
+    void setCurrent(unsigned int current);
+    void setVoltage(unsigned int voltage);
+    
+    void getCurrent();
+    void setCurrent();
 private:
     unsigned char device_address;
     i2c_inst_t* i2c;
@@ -16,8 +26,7 @@ private:
 
     unsigned char readWord(unsigned char register_address);
     void writeWord(unsigned char register_address, unsigned char data);
-public:
-    FUSB302(unsigned char address, i2c_inst_t* wire);
+
     void getData();
     void setData();
 
