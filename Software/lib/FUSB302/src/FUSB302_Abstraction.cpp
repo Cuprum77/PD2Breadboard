@@ -5,6 +5,7 @@
  * @brief USB PD constructor
  * @param wire Wire object
  * @param address USB PD address
+ * @note This constructor will automatically call getAllRegisters() to get the current state of the USB PD chip
 */
 FUSB302::FUSB302(unsigned char address, i2c_inst_t* wire)
 {

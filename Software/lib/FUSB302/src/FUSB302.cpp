@@ -332,19 +332,19 @@ void FUSB302::getControl4()
 }
 
 /**
- * @brief Read data from Status0 register
+ * @brief Read data from Status0A register
 */
-void FUSB302::getStatus0()
+void FUSB302::getStatus0A()
 {
-    this->data.status0 = this->readWord(FUSB302_STATUS0_ADDR);
+    this->data.status0 = this->readWord(FUSB302_STATUS0A_ADDR);
 }
 
 /**
- * @brief Read data from Status1 register
+ * @brief Read data from Status1A register
 */
-void FUSB302::getStatus1()
+void FUSB302::getStatus1A()
 {
-    this->data.status1 = this->readWord(FUSB302_STATUS1_ADDR);
+    this->data.status1 = this->readWord(FUSB302_STATUS1A_ADDR);
 }
 
 /**
