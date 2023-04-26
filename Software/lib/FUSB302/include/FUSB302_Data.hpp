@@ -237,11 +237,16 @@ struct Control0
         TX_FLUSH = (value >> 6) & 0x1;
     }
 
+    // Will clear the Write/Clear bits!
     unsigned char get()
     {
-        return TX_START | (AUTO_PRE << 1) | 
+        unsigned char data = TX_START | (AUTO_PRE << 1) | 
         (HOST_CUR << 2) | (INT_MASK << 5) | 
         (TX_FLUSH << 6);
+        // Clear the Write/Clear bits
+        TX_START = 0;
+        TX_FLUSH = 0;
+        return data;
     }
 };
 
@@ -286,11 +291,15 @@ struct Control1
         ENSOP2DB = (value >> 6) & 0x1;
     }
 
+    // Will clear the Write/Clear bits!
     unsigned char get()
     {
-        return ENSOP1 | (ENSOP2 << 1) | 
+        unsigned char data = ENSOP1 | (ENSOP2 << 1) | 
         (RX_FLUSH << 2) | (BIST_MODE2 << 4) | 
         (ENSOP1DB << 5) | (ENSOP2DB << 6);
+        // Clear the Write/Clear bits
+        RX_FLUSH = 0;
+        return data;
     }
 };
 
@@ -375,12 +384,16 @@ struct Control3
         BIST_TMODE = (value >> 5) & 0x1;
         SEND_HARD_RESET = (value >> 6) & 0x1;
     }
-
+    
+    // Will clear the Write/Clear bits!
     unsigned char get()
     {
-        return AUTO_RETRY | (N_RETRIES << 1) | 
+        unsigned char data = AUTO_RETRY | (N_RETRIES << 1) | 
         (AUTO_SOFTRESET << 3) | (AUTO_HARDRESET << 4) | 
         (BIST_TMODE << 5) | (SEND_HARD_RESET << 6);
+        // Clear the Write/Clear bits
+        SEND_HARD_RESET = 0;
+        return data;
     }
 };
 
@@ -486,9 +499,14 @@ struct Reset
         PD_RESET = (value >> 1) & 0x1;
     }
 
+    // Will clear the Write/Clear bits!
     unsigned char get()
     {
-        return SW_RES | (PD_RESET << 1);
+        unsigned char data = SW_RES | (PD_RESET << 1);
+        // Clear the Write/Clear bits
+        PD_RESET = 0;
+        SW_RES = 0;
+        return data;
     }
 };
 
@@ -630,17 +648,22 @@ struct Control4
  *  5   | SOFTFAIL
  *  4   | RETRYFAIL
  *  3:2 | POWER [1:0]
+ *  1   | SOFTRST
+ *  0   | HARDRST
  */
 struct Status0A
 {
+    unsigned char HARDRST    : 1;
+    unsigned char SOFTRST    : 1;
     unsigned char POWER      : 2;
-    unsigned char            : 2;
     unsigned char RETRYFAIL  : 1;
     unsigned char SOFTFAIL   : 1;
     unsigned char            : 2;
 
     Status0A()
     {
+        HARDRST = 0;
+        SOFTRST = 0;
         POWER = 0;
         RETRYFAIL = 0;
         SOFTFAIL = 0;
@@ -648,14 +671,18 @@ struct Status0A
 
     Status0A(unsigned char value)
     {
-        POWER = value & 0x3;
+        HARDRST = value & 0x1;
+        SOFTRST = (value >> 1) & 0x1;
+        POWER = (value >> 2) & 0x3;
         RETRYFAIL = (value >> 4) & 0x1;
         SOFTFAIL = (value >> 5) & 0x1;
     }
 
     unsigned char get()
     {
-        return POWER | (RETRYFAIL << 4) | (SOFTFAIL << 5);
+        return HARDRST | (SOFTRST << 1) | 
+        (POWER << 2) | (RETRYFAIL << 4) | 
+        (SOFTFAIL << 5);
     }
 };
 
@@ -779,7 +806,7 @@ struct InterruptB
  *  7   | VBUSOK
  *  6   | ACTIVITY
  *  5   | COMP
- *  4   | COMP_CHK
+ *  4   | CRC_CHK
  *  3   | ALERT
  *  2   | WAKE
  *  1:0 | BC_LVL [1:0]
@@ -789,7 +816,7 @@ struct Status0
     unsigned char BC_LVL     : 2;
     unsigned char WAKE       : 1;
     unsigned char ALERT      : 1;
-    unsigned char COMP_CHK   : 1;
+    unsigned char CRC_CHK   : 1;
     unsigned char COMP       : 1;
     unsigned char ACTIVITY   : 1;
     unsigned char VBUSOK     : 1;
@@ -799,7 +826,7 @@ struct Status0
         BC_LVL = 0;
         WAKE = 0;
         ALERT = 0;
-        COMP_CHK = 0;
+        CRC_CHK = 0;
         COMP = 0;
         ACTIVITY = 0;
         VBUSOK = 0;
@@ -810,7 +837,7 @@ struct Status0
         BC_LVL = value & 0x3;
         WAKE = (value >> 2) & 0x1;
         ALERT = (value >> 3) & 0x1;
-        COMP_CHK = (value >> 4) & 0x1;
+        CRC_CHK = (value >> 4) & 0x1;
         COMP = (value >> 5) & 0x1;
         ACTIVITY = (value >> 6) & 0x1;
         VBUSOK = (value >> 7) & 0x1;
@@ -819,7 +846,7 @@ struct Status0
     unsigned char get()
     {
         return BC_LVL | (WAKE << 2) | (ALERT << 3) | 
-        (COMP_CHK << 4) | (COMP << 5) | (ACTIVITY << 6) | 
+        (CRC_CHK << 4) | (COMP << 5) | (ACTIVITY << 6) | 
         (VBUSOK << 7);
     }
 };
@@ -933,24 +960,24 @@ struct Interrupt
 
 /*
  *  7:0 | TX/RX Token
+ *  However, this stores both the TX and RX FIFOs separately
+ *  This allows for easier access to the FIFOs
  */
 struct FIFO
 {
-    unsigned char fifo;
+    unsigned char RXFIFO;
+    unsigned char TXFIFO;
 
     FIFO()
     {
-        fifo = 0;
+        RXFIFO = 0;
+        TXFIFO = 0;
     }
 
-    FIFO(unsigned char value)
+    FIFO(unsigned char rx, unsigned char tx)
     {
-        fifo = value;
-    }
-
-    unsigned char get()
-    {
-        return fifo;
+        RXFIFO = rx;
+        TXFIFO = tx;
     }
 };
 
