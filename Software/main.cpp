@@ -45,7 +45,7 @@ Button buttonMenu(BUTTON_MENU);
 Button buttonDown(BUTTON_DOWN);
 Display display(spi0, displayPins, displayParams, true);
 Memory memory(EEPROM_ADDRESS, i2c0);
-FUSB302 usbPD(FUSB302_ADDRESS, i2c1);
+USB_PD usbPD(FUSB302_ADDRESS, i2c1);
 INA219 ina219(INA219_ADDRESS, i2c0);
 
 /**

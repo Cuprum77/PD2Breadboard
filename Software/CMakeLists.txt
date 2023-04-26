@@ -34,12 +34,14 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 add_subdirectory(${CMAKE_SOURCE_DIR}/lib/Button)
 add_subdirectory(${CMAKE_SOURCE_DIR}/lib/Display)
 add_subdirectory(${CMAKE_SOURCE_DIR}/lib/FUSB302)
+add_subdirectory(${CMAKE_SOURCE_DIR}/lib/USB_PD)
 add_subdirectory(${CMAKE_SOURCE_DIR}/lib/INA219)
 add_subdirectory(${CMAKE_SOURCE_DIR}/lib/Memory)
 
 link_directories(${CMAKE_SOURCE_DIR}/lib/Button)
 link_directories(${CMAKE_SOURCE_DIR}/lib/Display)
 link_directories(${CMAKE_SOURCE_DIR}/lib/FUSB302)
+link_directories(${CMAKE_SOURCE_DIR}/lib/USB_PD)
 link_directories(${CMAKE_SOURCE_DIR}/lib/INA219)
 link_directories(${CMAKE_SOURCE_DIR}/lib/Memory)
 
@@ -53,7 +55,7 @@ target_link_libraries(${PROJECT_NAME}
     hardware_i2c
     Button
     Display
-    FUSB302
+    USB_PD
     INA219
     Memory
 )
