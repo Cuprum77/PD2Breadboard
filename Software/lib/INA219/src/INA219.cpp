@@ -294,6 +294,215 @@ bool INA219::verifyConnection()
     return !(ret < 0);
 }
 
+/**
+ * @brief Test the INA219
+ * @return errors in the INA219 test
+ * @note This works by comparing the values read directly from the INA219 with the values already set in the library
+*/
+int INA219::selfTest()
+{
+    // create a variable to store the errors in
+    int errors = 0;
+    // however, the voltage and current values may change since they were fetched from the INA219
+    // so we need to fetch them again
+    this->getData(true);
+    // allow a slight deviation in the voltage and current values
+    // we can be quite generous as its not critical to have the exact voltage
+    int allowed_deviation = 100;
+
+    // check if the configuration register is correct
+    unsigned short data = this->readWord(INA219_CONFIGURATION_ADDR);
+    if(data != this->data.configuration.get())
+        errors |= INA219_SELF_TEST_CONFIGURATION_ERROR;
+
+    // check if the shunt voltage is correct
+    data = this->readWord(INA219_SHUNT_VOLTAGE_ADDR);
+    if(data != this->data.shuntVoltage &&
+        data > (this->data.shuntVoltage + allowed_deviation)
+        || data < (this->data.shuntVoltage - allowed_deviation))
+        errors |= INA219_SELF_TEST_SHUNT_VOLTAGE_ERROR;
+
+    // check if the bus voltage is correct
+    data = this->readWord(INA219_BUS_VOLTAGE_ADDR);
+    if(data != this->data.busVoltage.get() &&
+        data > (this->data.busVoltage.get() + allowed_deviation)
+        || data < (this->data.busVoltage.get() - allowed_deviation))
+        errors |= INA219_SELF_TEST_BUS_VOLTAGE_ERROR;
+
+    // check if the current is correct
+    data = this->readWord(INA219_CURRENT_ADDR);
+    if(data != this->data.current &&
+        data > (this->data.current + allowed_deviation)
+        || data < (this->data.current - allowed_deviation))
+        errors |= INA219_SELF_TEST_CURRENT_ERROR;
+
+    // check if the power is correct
+    data = this->readWord(INA219_POWER_ADDR);
+    if(data != this->data.power &&
+        data > (this->data.power + allowed_deviation)
+        || data < (this->data.power - allowed_deviation))
+        errors |= INA219_SELF_TEST_POWER_ERROR;
+
+    // check if the calibration register is correct
+    data = this->readWord(INA219_CALIBRATION_ADDR);
+    if(data != this->data.calibration)
+        errors |= INA219_SELF_TEST_CALIBRATION_ERROR;
+
+    // return the errors
+    return errors;
+}
+
+/**
+ * @brief Convert the self test errors to a string
+ * @param selfTestResult the result to convert
+ * @return the string representation of the errors
+*/
+const char* INA219::selfTestToString(int selfTestResult)
+{
+    // create an array of strings to store the errors in
+
+    // store the seperator and space in static variables so we don't have to create them every time
+    static char seperator[] = "\n  - ";
+
+    // clear the error buffer
+    for(int i = 0; i < sizeof(this->errorBuffer); i++)
+        this->errorBuffer[i] = 0;
+
+    // store index
+    int index = 0;
+    // count the number of errors
+    int errorCount = this->countSetBits(selfTestResult);
+
+    // add the seperator
+    strcpy(this->errorBuffer + index, seperator);
+    // increment the index
+    index += strlen(seperator);
+
+    // get all the errors from the result
+    if(selfTestResult == INA219_Self_Test::INA219_SELF_TEST_OK)
+    {
+        // copy the error to the buffer
+        strcpy(this->errorBuffer + index, ERROR_OK);
+        return this->errorBuffer;
+    }
+    
+    if(selfTestResult & INA219_SELF_TEST_CONFIGURATION_ERROR)
+    {
+        // copy the error to the buffer
+        strcpy(this->errorBuffer + index, ERROR_CONFIG);
+        // increment the index
+        index += strlen(ERROR_CONFIG);
+        errorCount--;
+
+        if(errorCount)
+        {
+            // add seperator
+            strcpy(this->errorBuffer + index, seperator);
+            // increment the index
+            index += strlen(seperator);
+        }
+    }
+    if(selfTestResult & INA219_SELF_TEST_SHUNT_VOLTAGE_ERROR)
+    {
+        // copy the error to the buffer
+        strcpy(this->errorBuffer + index, ERROR_SHUNT_VOLTAGE);
+        // increment the index
+        index += strlen(ERROR_SHUNT_VOLTAGE);
+        errorCount--;
+
+        if(errorCount)
+        {
+            // add seperator
+            strcpy(this->errorBuffer + index, seperator);
+            // increment the index
+            index += strlen(seperator);
+        }
+    }
+    if(selfTestResult & INA219_SELF_TEST_BUS_VOLTAGE_ERROR)
+    {
+        // copy the error to the buffer
+        strcpy(this->errorBuffer + index, ERROR_BUS_VOLTAGE);
+        // increment the index
+        index += strlen(ERROR_BUS_VOLTAGE);
+        errorCount--;
+
+        if(errorCount)
+        {
+            // add seperator
+            strcpy(this->errorBuffer + index, seperator);
+            // increment the index
+            index += strlen(seperator);
+        }
+    }
+    if(selfTestResult & INA219_SELF_TEST_CURRENT_ERROR)
+    {
+        // copy the error to the buffer
+        strcpy(this->errorBuffer + index, ERROR_CURRENT);
+        // increment the index
+        index += strlen(ERROR_CURRENT);
+        errorCount--;
+
+        if(errorCount)
+        {
+            // add seperator
+            strcpy(this->errorBuffer + index, seperator);
+            // increment the index
+            index += strlen(seperator);
+        }
+    }
+    if(selfTestResult & INA219_SELF_TEST_POWER_ERROR)
+    {
+        // copy the error to the buffer
+        strcpy(this->errorBuffer + index, ERROR_POWER);
+        // increment the index
+        index += strlen(ERROR_POWER);
+        errorCount--;
+
+        if(errorCount)
+        {
+            // add seperator
+            strcpy(this->errorBuffer + index, seperator);
+            // increment the index
+            index += strlen(seperator);
+        }
+    }
+    if(selfTestResult & INA219_SELF_TEST_CALIBRATION_ERROR)
+    {
+        // copy the error to the buffer
+        strcpy(this->errorBuffer + index, ERROR_CALIBRATION);
+        // increment the index
+        index += strlen(ERROR_CALIBRATION);
+        errorCount--;
+
+        if(errorCount)
+        {
+            // add seperator
+            strcpy(this->errorBuffer + index, seperator);
+            // increment the index
+            index += strlen(seperator);
+        }
+    }
+
+    return this->errorBuffer;
+}
+
+
+/**
+ * @private
+ * @brief Return how many bits are set in a number
+ * @param number the number to check
+ * @return the number of bits set
+*/
+unsigned int INA219::countSetBits(unsigned int number)
+{
+    unsigned int count = 0;
+    while(number)
+    {
+        count += number & 1;
+        number >>= 1;
+    }
+    return count;
+}
 
 /**
  * @private

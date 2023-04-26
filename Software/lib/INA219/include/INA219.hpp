@@ -5,6 +5,8 @@
 #include "INA219_Enums.hpp"
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "pico/stdlib.h"
 #include "hardware/i2c.h"
 
@@ -14,15 +16,16 @@
 #define SHUNT_VOLTAGE_LSB_VALUE 0.00001f    // 10uV
 #define BUS_VOLTAGE_LSB_VALUE   0.004f      // 4mV
 
+#define ERROR_OK                "No errors!"
+#define ERROR_CONFIG            "Configuration register error!"
+#define ERROR_SHUNT_VOLTAGE     "Shunt voltage error!"
+#define ERROR_BUS_VOLTAGE       "Bus voltage error!"
+#define ERROR_CURRENT           "Current error!"
+#define ERROR_POWER             "Power error!"
+#define ERROR_CALIBRATION       "Calibration error!"
+
 class INA219
 {
-private:
-    unsigned int device_address;
-    INA219_Data data;
-    i2c_inst_t* i2c;
-
-    unsigned short readWord(unsigned char register_address);
-    void writeWord(unsigned char register_address, unsigned short data);
 public:
     INA219(unsigned int address, i2c_inst_t* i2c);
     void getData(bool all = false);
@@ -55,4 +58,16 @@ public:
     void setCalibration();
 
     bool verifyConnection();
+    int selfTest();
+    const char* selfTestToString(int selfTestResult);
+
+private:
+    unsigned int device_address;
+    INA219_Data data;
+    i2c_inst_t* i2c;
+    char errorBuffer[150];
+    
+    unsigned int countSetBits(unsigned int n);
+    unsigned short readWord(unsigned char register_address);
+    void writeWord(unsigned char register_address, unsigned short data);
 };

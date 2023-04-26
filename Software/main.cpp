@@ -379,21 +379,40 @@ void processUSBData()
 	// verify that all peripherals are connected
 	else if(strcmp(buffer, TEST_CODE) == 0)
 	{
-		char connected = memory.verifyConnection() ? 'Y' : 'N';
-		printf("EEPROM connected: %c\n", connected);
-		connected = ina219.verifyConnection() ? 'Y' : 'N';
-		printf("INA219 connected: %c\n", connected);
-		connected = usbPD.verifyConnection() ? 'Y' : 'N';
-		printf("FUSB302 connected: %c\n\n", connected);
+		const char* connectedString = "YES";
+		const char* notConnectedString = "NO";
+
+		printf("EEPROM connected: %s\n",
+			memory.verifyConnection() ? 
+				connectedString : notConnectedString);
+		printf("INA219 connected: %s\n", 
+			ina219.verifyConnection() ? 
+				connectedString : notConnectedString);
+		printf("FUSB302 connected: %s\n", 
+			usbPD.verifyConnection() ? 
+				connectedString : notConnectedString);
 
 		if(memory.verifyConnection())
 		{
-			printf("Verifying that the EEPROM is working...\n");
+			printf("\nVerifying that the EEPROM is working...\n");
 			int errors = memory.selfTest();
 			if(errors == 0)
 				printf("EEPROM self test passed!\n");
 			else if(errors > 0)
 				printf("EEPROM self test failed! Bad read/writes: %d\n", errors);
+		}
+
+		if(ina219.verifyConnection())
+		{
+			printf("\nVerifying that the INA219 is working...\n");
+			int errors = ina219.selfTest();
+			const char* errorString = ina219.selfTestToString(errors);
+			printf("INA219 self test results: %s\n", errorString);
+		}
+
+		if(usbPD.verifyConnection())
+		{
+			printf("\nVerifying that the FUSB302 is working...\n");
 		}
 	}
 
