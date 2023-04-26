@@ -28,7 +28,9 @@ fp-info-cache
 # Backup Files
 Hardware/USB-PD-backups/
 
-# VSCode/PIO related folders
-Software/.pio/
+# VSCode
 Software/.vscode/
 .vscode/
+
+# GIMP
+*.xcf
