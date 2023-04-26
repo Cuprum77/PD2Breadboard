@@ -303,9 +303,6 @@ int INA219::selfTest()
 {
     // create a variable to store the errors in
     int errors = 0;
-    // however, the voltage and current values may change since they were fetched from the INA219
-    // so we need to fetch them again
-    this->getData(true);
     // allow a slight deviation in the voltage and current values
     // we can be quite generous as its not critical to have the exact voltage
     int allowed_deviation = 100;
@@ -314,6 +311,15 @@ int INA219::selfTest()
     unsigned short data = this->readWord(INA219_CONFIGURATION_ADDR);
     if(data != this->data.configuration.get())
         errors |= INA219_SELF_TEST_CONFIGURATION_ERROR;
+
+    // check if the calibration register is correct
+    data = this->readWord(INA219_CALIBRATION_ADDR);
+    if(data != this->data.calibration)
+        errors |= INA219_SELF_TEST_CALIBRATION_ERROR;
+
+    // however, the voltage and current values may change since they were fetched from the INA219
+    // so we need to fetch them again
+    this->getData(true);
 
     // check if the shunt voltage is correct
     data = this->readWord(INA219_SHUNT_VOLTAGE_ADDR);
@@ -342,11 +348,6 @@ int INA219::selfTest()
         data > (this->data.power + allowed_deviation)
         || data < (this->data.power - allowed_deviation))
         errors |= INA219_SELF_TEST_POWER_ERROR;
-
-    // check if the calibration register is correct
-    data = this->readWord(INA219_CALIBRATION_ADDR);
-    if(data != this->data.calibration)
-        errors |= INA219_SELF_TEST_CALIBRATION_ERROR;
 
     // return the errors
     return errors;
