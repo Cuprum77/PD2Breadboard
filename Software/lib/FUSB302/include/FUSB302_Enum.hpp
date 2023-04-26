@@ -13,7 +13,7 @@ typedef enum : unsigned int
     // CC2 only
     CC2,
     // CC1 and CC2
-    Both
+    Both_CC
 } FUSB302_CC;
 
 typedef enum : unsigned int
@@ -61,7 +61,7 @@ typedef enum : unsigned int
     // Enable SOP2 and ignore SOP1
     SOP2,
     // Enable both SOP1 and SOP2
-    Both
+    Both_SOP
 } FUSB302_SOP;
 
 typedef enum : unsigned int
