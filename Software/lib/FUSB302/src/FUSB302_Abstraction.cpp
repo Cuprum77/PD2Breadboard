@@ -31,7 +31,7 @@ bool FUSB302::verifyConnection()
  * @brief Get the device ID
  * @return the device ID
 */
-unsigned char FUSB302::getDeviceID()
+unsigned char FUSB302::getID()
 {
     return this->data.deviceid.VersionID;
 }
@@ -83,7 +83,7 @@ void FUSB302::setVCONN(FUSB302_CC enable)
  * @param enable Enable or disable measuring
  * @note Does not write to the registers, only sets the local cache
 */
-void FUSB302::setMeasure(FUSB302_CC enable)
+void FUSB302::setMeasureCC(FUSB302_CC enable)
 {
     this->data.switches0.MEAS_CC1 = enable & 0x1;
     this->data.switches0.MEAS_CC2 = enable & 0x2 >> 1;
@@ -125,7 +125,7 @@ FUSB302_CC FUSB302::getVCONN()
  * @return The CC measurement
  * @note Does not read from the registers, only reads the local cache
 */
-FUSB302_CC FUSB302::getMeasure()
+FUSB302_CC FUSB302::getMeasureCC()
 {
     return (FUSB302_CC)(this->data.switches0.MEAS_CC1 | this->data.switches0.MEAS_CC2 << 1);
 }

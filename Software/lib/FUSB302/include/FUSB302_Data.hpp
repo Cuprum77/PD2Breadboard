@@ -979,6 +979,26 @@ struct FIFO
         RXFIFO = rx;
         TXFIFO = tx;
     }
+
+    void setRX(unsigned char rx)
+    {
+        RXFIFO = rx;
+    }
+
+    void setTX(unsigned char tx)
+    {
+        TXFIFO = tx;
+    }
+
+    unsigned char getTX()
+    {
+        return RXFIFO;
+    }
+
+    unsigned char getRX()
+    {
+        return TXFIFO;
+    }
 };
 
 /**

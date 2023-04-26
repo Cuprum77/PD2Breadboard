@@ -14,10 +14,54 @@ public:
 #pragma region Constructor and connection verification
     FUSB302(unsigned char address, i2c_inst_t* wire);
     bool verifyConnection();
+    void getAllRegisters();
+    void setAllRegisters();
+#pragma endregion
+
+#pragma region transfer registers abstraction
+    void setSwitches0();
+    void setSwitches1();
+    void setMeasure();
+    void setSlice();
+    void setControl0();
+    void setControl1();
+    void setControl2();
+    void setControl3();
+    void setMask1();
+    void setPower();
+    void setOCPreg();
+    void setMaskA();
+    void setMaskB();
+    void setControl4();
+    void setFIFO();
+
+    void getDeviceID();
+    void getSwitches0();
+    void getSwitches1();
+    void getMeasure();
+    void getSlice();
+    void getControl0();
+    void getControl1();
+    void getControl2();
+    void getControl3();
+    void getMask1();
+    void getPower();
+    void getOCPreg();
+    void getMaskA();
+    void getMaskB();
+    void getControl4();
+    void getStatus0A();
+    void getStatus1A();
+    void getInterruptA();
+    void getInterruptB();
+    void getStatus0();
+    void getStatus1();
+    void getInterrupt();
+    void getFIFO();
 #pragma endregion
 
 #pragma region Device ID register abstraction
-    unsigned char getDeviceID();
+    unsigned char getID();
     unsigned char getProductID();
     unsigned char getRevisionID();
 #pragma endregion
@@ -25,11 +69,11 @@ public:
 #pragma region Switches0 register abstraction
     void setPullUp(FUSB302_CC enable);
     void setVCONN(FUSB302_CC enable);
-    void setMeasure(FUSB302_CC enable);
+    void setMeasureCC(FUSB302_CC enable);
     void setPullDown(FUSB302_CC enable);
     FUSB302_CC getPullUp();
     FUSB302_CC getVCONN();
-    FUSB302_CC getMeasure();
+    FUSB302_CC getMeasureCC();
     FUSB302_CC getPullDown();
 #pragma endregion
 
@@ -250,10 +294,7 @@ public:
 #pragma endregion
 
 protected:
-    FUSB302_Data getData(); 
-    void getAllData();
-    void setAllData();
-
+    FUSB302_Data getData();
 private:
     unsigned char device_address;
     i2c_inst_t* i2c;
