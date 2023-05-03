@@ -338,6 +338,15 @@ void Display::write(const char* text, Color color, Color background, uchar size)
     // set the cursor
     this->setCursor(Point(x, y));
 }
+
+/**
+ * @brief Write a character on the display
+ * @param value Boolean to print
+*/
+void Display::write(bool value)
+{
+    this->write(value ? "true" : "false");
+}
 #pragma endregion
 
 #pragma region Print char
@@ -801,5 +810,14 @@ uint Display::drawAscii(const char character, Point point, uint size, Color colo
 
     // return the character width
     return FONT_WIDTH * size;
+}
+
+/**
+ * @brief Write a character on the display
+ * @param value Boolean to print
+*/
+void Display::print(bool value)
+{
+    this->print(value ? "true" : "false");
 }
 #pragma endregion

@@ -102,6 +102,7 @@ public:
     void write(const char* text, uchar size = 1);
     void write(const char* text, Color color, uchar size = 1);
     void write(const char* text, Color color, Color background, uchar size = 1);
+    void write(bool value);
 #pragma endregion
     
 #pragma region Print
@@ -135,6 +136,7 @@ public:
     void print(const char* text, uchar size = 1);
     void print(const char* text, Color color, uchar size = 1);
     void print(const char* text, Color color, Color background, uchar size = 1);
+    void print(bool value);
     void print(void);
 #pragma endregion
 
