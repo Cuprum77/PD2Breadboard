@@ -45,7 +45,7 @@ Button buttonMenu(BUTTON_MENU);
 Button buttonDown(BUTTON_DOWN);
 Display display(spi0, displayPins, displayParams, true);
 Memory memory(EEPROM_ADDRESS, i2c0);
-USB_PD usbPD(FUSB302_ADDRESS, i2c1);
+USB_PD usbPD(FUSB302_ADDRESS, i2c1, PD_INT_N);
 INA219 ina219(INA219_ADDRESS, i2c0);
 
 /**
@@ -82,14 +82,12 @@ void initLEDs()
 	gpio_init(RIGHT_MOSFET_LED);
 	gpio_init(LEFT_MOSFET);
 	gpio_init(RIGHT_MOSFET);
-	gpio_init(PICO_DEFAULT_LED_PIN);
 
 	// set the pins to output
 	gpio_set_dir(LEFT_MOSFET_LED, GPIO_OUT);
 	gpio_set_dir(RIGHT_MOSFET_LED, GPIO_OUT);
 	gpio_set_dir(LEFT_MOSFET, GPIO_OUT);
 	gpio_set_dir(RIGHT_MOSFET, GPIO_OUT);
-	gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
 
 	// set the binary data to show the pins used for the LEDs
 	bi_decl(bi_4pins_with_names(
@@ -98,10 +96,6 @@ void initLEDs()
 		RIGHT_MOSFET_LED, "Right MOSFET LED", 
 		RIGHT_MOSFET, "Right MOSFET")
 	);
-
-	// for debugging purposes
-	gpio_init(PICO_DEFAULT_LED_PIN);
-	gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
 }
 
 /**
@@ -141,36 +135,6 @@ void fetchDataFromEEPROM()
 	voltageNegotiated = memory.readWord(MEMORY_VOLTAGE_ADDRESS);
 	currentLimit = memory.readWord(MEMORY_CURRENT_LIMIT_ADDRESS);
 	backlightBrightness = memory.readWord(MEMORY_BACKLIGHT_ADDRESS);
-}
-
-// this is just for fun lmao
-unsigned long lastDebounceTime = 0;
-bool ledState = false;
-const long intervalSequence[4] = { 200000, 125000, 200000, 600000};
-/**
- * @brief Heartbeat function
- * @note Has to be called every loop
-*/
-void heartBeat()
-{
-	static int sequenceIndex = 0;
-
-	// if we havent reached our current interval yet, return
-	if((time_us_32() - lastDebounceTime) < intervalSequence[sequenceIndex])
-		return;
-	
-	// increment the sequence index
-	sequenceIndex++;
-
-	// if we have reached the end of the sequence, reset the index
-	if(sequenceIndex >= 4)
-		sequenceIndex = 0;
-
-	// toggle the LED
-	gpio_put(PICO_DEFAULT_LED_PIN, ledState);
-	// set the last debounce time
-	lastDebounceTime = time_us_32();
-	ledState = !ledState;
 }
 
 // pattern data
@@ -273,7 +237,9 @@ void processUSBData()
 		// reset the device into usb boot
 		// the intellisense doesnt like this function so we have to disable it until we build
 #ifndef __INTELLISENSE__
-		reset_usb_boot(0, 0);
+		reset_usb_boot(LEFT_MOSFET_LED | RIGHT_MOSFET_LED, 0);
+		watchdog_reboot(0, SRAM_END, 0);
+		while(1);
 #endif
 	}
 	else if(strcmp(buffer, RESET_CODE) == 0)
@@ -347,6 +313,12 @@ void processUSBData()
 		// print the measurements
 		printf("V: %.3f V, I: %.3f A, P: %.3f W\n", ina219.getVoltage(), ina219.getCurrent() / 1000, ina219.getPower() / 1000);
 	}
+	// check if we sent the command to get all the raw measurements
+	else if(strcmp(buffer, GET_READINGS_RAW_CODE) == 0)
+	{
+		// print the measurements
+		printf("V: %d, I: %d, P: %d\n", ina219.getBusVoltageRaw(), ina219.getShuntVoltageRaw(), ina219.getPowerRaw());
+	}
 	// check if we sent the command to change the display brightness
 	else if(strncmp(buffer, BACKLIGHT_CODE, sizeof(BACKLIGHT_CODE) - 1) == 0)
 	{
@@ -406,14 +378,30 @@ void processUSBData()
 		{
 			printf("\nVerifying that the INA219 is working...\n");
 			int errors = ina219.selfTest();
-			const char* errorString = ina219.selfTestToString(errors);
-			printf("INA219 self test results: %s\n", errorString);
+			const char* errorStringINA = ina219.selfTestToString(errors);
+			printf("INA219 self test results: %s\n", errorStringINA);
 		}
 
 		if(usbPD.verifyConnection())
 		{
 			printf("\nVerifying that the FUSB302 is working...\n");
+			int errors = usbPD.selfTest();
+			const char* errorStringPD = usbPD.selfTestToString(errors);
+			printf("FUSB302 self test results: %s\n", errorStringPD);
 		}
+	}
+	else if(strcmp(buffer, FUSB302_DUMP_DATA) == 0)
+	{
+		usbPD.printRegisters();
+	}
+	else if(strcmp(buffer, FUSB302_GET_IDENTITY) == 0)
+	{
+		int id = usbPD.deviceID();
+		printf("ID: %d\n", id);
+		id = usbPD.productID();
+		printf("Product ID: %d\n", id);
+		id = usbPD.revisionID();
+		printf("Revision ID: %d\n", id);
 	}
 
 	// clear the buffer
@@ -433,11 +421,12 @@ void buttonHandler()
 	}
 	if(buttonMenu.isHeld())
 	{
-
 		static bool state = false;
 		state = !state;
 		gpio_put(LEFT_MOSFET, state);
 		gpio_put(RIGHT_MOSFET, state);
+		gpio_put(LEFT_MOSFET_LED, state);
+		gpio_put(RIGHT_MOSFET_LED, state);
 		printf("MENU held\n");
 	}
 	if(buttonMenu.isClicked())
@@ -455,7 +444,7 @@ void buttonHandler()
 	}
 	if(buttonDown.isClicked())
 	{
-		currentLimit -= CURRENT_STEPS;
+		currentLimit -= CURRENT_STEPS; 
 		printf("DOWN\n");
 	}
 	if(buttonUp.isHeld())
@@ -471,20 +460,6 @@ void buttonHandler()
 	buttonUp.update();
 	buttonMenu.update();
 	buttonDown.update();
-}
-
-unsigned long lastPolling = 0;
-/**
- * @brief Periodically poll the INA219 for data
- * @note Has to be called every loop
-*/
-void pollINA()
-{
-	if((time_us_32() - lastPolling) < 100000)
-		return;
-
-	ina219.getData();
-	lastPolling = time_us_32();
 }
 
 /**
@@ -513,7 +488,7 @@ void core1Main()
 	display.fill(Colors::RaspberryRed);
 	//display.drawBitmap(Point(), BACKGROUND_PIXEL_DATA, BACKGROUND_WIDTH, BACKGROUND_HEIGHT);
 	
-	Point start = Point(0, 20);
+	Point start = Point(0, 5);
 
 	unsigned long lastUpdate = 0;
 	while(1)
@@ -532,18 +507,22 @@ void core1Main()
 		display.print("W\n");
 
 		core1RunTime = time_us_32() - core1Time;
-		display.print("C0:");
+		display.write("C0:");
 		double hz = 1/((float)core0RunTime * 0.000001)/1000;
 		display.write(hz, 2);
 		display.print("kHz");
-		display.write(core0RunTime);
-		display.print("us");
-		display.print("\nC1:");
+		display.write("C1:");
 		hz = 1/((float)core1RunTime * 0.000001);
 		display.write(hz, 2);
 		display.print("Hz");
-		display.write((float)core1RunTime / 1000);
-		display.print("ms");
+		display.write("PD: ");
+		display.print(usbPD.pdCapable());
+		display.write("PPS: ");
+		display.print(usbPD.ppsCapable());
+		display.print();
+		display.print("V_CAP:");
+
+		
 
 		// redo the background every 5 seconds
 		if((time_us_32() - lastUpdate) > 5000000)
@@ -575,6 +554,9 @@ int main()
 	ina219.setShuntADCResolution(INA219_64SAMPLES_34MS);
 	ina219.setMode(INA219_MODE_SHUNT_AND_BUS_VOLTAGE_CONTINUOUS);
 	ina219.setData();
+	ina219.getData(true);
+
+	usbPD.init();
 
 	// setup the second core
 	multicore_launch_core1(core1Main);
@@ -598,11 +580,18 @@ int main()
 	while(1)
 	{
 		unsigned long core0Time = time_us_32();
-		heartBeat();
-		pollINA();
+		usbPD.update();
+
+		static unsigned long lastPolling = 0;
+		if((time_us_32() - lastPolling) < 100000)
+		{
+			ina219.getData();
+			lastPolling = time_us_32();
+		}
+	
 		processUSBData();
 		buttonHandler();
-		overCurrentLEDs();
+		//overCurrentLEDs();
 
 		if(ina219.getCurrent() > currentLimit)
 			overcurrent = true;

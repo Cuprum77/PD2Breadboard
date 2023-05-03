@@ -206,7 +206,7 @@ double INA219::getShuntVoltage()
     double voltage = (double)shunt_voltage;
     // multiply the shunt voltage by the LSB value which is defined by SHUNT_VOLTAGE_LSB_VALUE
     voltage *= SHUNT_VOLTAGE_LSB_VALUE;
-    return voltage * 1000;
+    return voltage;
 }
 
 /**
@@ -232,7 +232,13 @@ double INA219::getCurrent()
     // calculate the current
     double current = ((double)this->getCurrentRaw()) * CURRENT_RESOLUTION;
     // multiply the current by 1000 to get milli amps
-    return current * 1000;
+    current *= 1000;
+    // there is a bug where the chip outputs INT16_MAX 
+    // when the current is 0, so we need to check for that
+    if(current > (UINT16_MAX - 100))
+        current = 0;
+
+    return current;
 }
 
 /**
@@ -302,7 +308,7 @@ bool INA219::verifyConnection()
 int INA219::selfTest()
 {
     // create a variable to store the errors in
-    int errors = 0;
+    int errors = INA219_SELF_TEST_OK;
     // allow a slight deviation in the voltage and current values
     // we can be quite generous as its not critical to have the exact voltage
     int allowed_deviation = 100;
@@ -319,7 +325,7 @@ int INA219::selfTest()
 
     // however, the voltage and current values may change since they were fetched from the INA219
     // so we need to fetch them again
-    this->getData(true);
+    this->getData();
 
     // check if the shunt voltage is correct
     data = this->readWord(INA219_SHUNT_VOLTAGE_ADDR);
@@ -360,8 +366,6 @@ int INA219::selfTest()
 */
 const char* INA219::selfTestToString(int selfTestResult)
 {
-    // create an array of strings to store the errors in
-
     // store the seperator and space in static variables so we don't have to create them every time
     static char seperator[] = "\n  - ";
 
@@ -383,16 +387,16 @@ const char* INA219::selfTestToString(int selfTestResult)
     if(selfTestResult == INA219_Self_Test::INA219_SELF_TEST_OK)
     {
         // copy the error to the buffer
-        strcpy(this->errorBuffer + index, ERROR_OK);
+        strcpy(this->errorBuffer + index, INA219_ERROR_OK);
         return this->errorBuffer;
     }
     
     if(selfTestResult & INA219_SELF_TEST_CONFIGURATION_ERROR)
     {
         // copy the error to the buffer
-        strcpy(this->errorBuffer + index, ERROR_CONFIG);
+        strcpy(this->errorBuffer + index, INA219_ERROR_CONFIG);
         // increment the index
-        index += strlen(ERROR_CONFIG);
+        index += strlen(INA219_ERROR_CONFIG);
         errorCount--;
 
         if(errorCount)
@@ -406,9 +410,9 @@ const char* INA219::selfTestToString(int selfTestResult)
     if(selfTestResult & INA219_SELF_TEST_SHUNT_VOLTAGE_ERROR)
     {
         // copy the error to the buffer
-        strcpy(this->errorBuffer + index, ERROR_SHUNT_VOLTAGE);
+        strcpy(this->errorBuffer + index, INA219_ERROR_SHUNT_VOLTAGE);
         // increment the index
-        index += strlen(ERROR_SHUNT_VOLTAGE);
+        index += strlen(INA219_ERROR_SHUNT_VOLTAGE);
         errorCount--;
 
         if(errorCount)
@@ -422,9 +426,9 @@ const char* INA219::selfTestToString(int selfTestResult)
     if(selfTestResult & INA219_SELF_TEST_BUS_VOLTAGE_ERROR)
     {
         // copy the error to the buffer
-        strcpy(this->errorBuffer + index, ERROR_BUS_VOLTAGE);
+        strcpy(this->errorBuffer + index, INA219_ERROR_BUS_VOLTAGE);
         // increment the index
-        index += strlen(ERROR_BUS_VOLTAGE);
+        index += strlen(INA219_ERROR_BUS_VOLTAGE);
         errorCount--;
 
         if(errorCount)
@@ -438,9 +442,9 @@ const char* INA219::selfTestToString(int selfTestResult)
     if(selfTestResult & INA219_SELF_TEST_CURRENT_ERROR)
     {
         // copy the error to the buffer
-        strcpy(this->errorBuffer + index, ERROR_CURRENT);
+        strcpy(this->errorBuffer + index, INA219_ERROR_CURRENT);
         // increment the index
-        index += strlen(ERROR_CURRENT);
+        index += strlen(INA219_ERROR_CURRENT);
         errorCount--;
 
         if(errorCount)
@@ -454,9 +458,9 @@ const char* INA219::selfTestToString(int selfTestResult)
     if(selfTestResult & INA219_SELF_TEST_POWER_ERROR)
     {
         // copy the error to the buffer
-        strcpy(this->errorBuffer + index, ERROR_POWER);
+        strcpy(this->errorBuffer + index, INA219_ERROR_POWER);
         // increment the index
-        index += strlen(ERROR_POWER);
+        index += strlen(INA219_ERROR_POWER);
         errorCount--;
 
         if(errorCount)
@@ -470,9 +474,9 @@ const char* INA219::selfTestToString(int selfTestResult)
     if(selfTestResult & INA219_SELF_TEST_CALIBRATION_ERROR)
     {
         // copy the error to the buffer
-        strcpy(this->errorBuffer + index, ERROR_CALIBRATION);
+        strcpy(this->errorBuffer + index, INA219_ERROR_CALIBRATION);
         // increment the index
-        index += strlen(ERROR_CALIBRATION);
+        index += strlen(INA219_ERROR_CALIBRATION);
         errorCount--;
 
         if(errorCount)

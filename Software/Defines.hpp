@@ -33,10 +33,10 @@
 #define BUTTON_DOWN         11
 
 // Mosfet pins and LEDs
-#define LEFT_MOSFET_LED     14
-#define LEFT_MOSFET         15
-#define RIGHT_MOSFET_LED    22
-#define RIGHT_MOSFET        26
+#define LEFT_MOSFET_LED     15
+#define LEFT_MOSFET         14
+#define RIGHT_MOSFET_LED    25
+#define RIGHT_MOSFET        24
 
 
 
@@ -83,6 +83,11 @@
 #define CURRENT_SETTING_CODE        "current_setting:"
 #define VOLTAGE_SETTING_CODE        "voltage_setting:"
 #define GET_READINGS_CODE           "get_readings"
+#define GET_READINGS_RAW_CODE       "get_readings_raw"
+
+// FUSB302 codes
+#define FUSB302_DUMP_DATA           "dump_usb"
+#define FUSB302_GET_IDENTITY        "get_identity"
 
 // display codes
 #define BACKLIGHT_CODE              "backlight:"

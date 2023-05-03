@@ -11,18 +11,18 @@
 #include "hardware/i2c.h"
 
 
-#define SHUNT_RESISTOR          0.001f      // 1mOhm
+#define SHUNT_RESISTOR          0.01f       // 10mOhm
 #define CURRENT_RESOLUTION      0.001f      // 1mA/bit
 #define SHUNT_VOLTAGE_LSB_VALUE 0.00001f    // 10uV
 #define BUS_VOLTAGE_LSB_VALUE   0.004f      // 4mV
 
-#define ERROR_OK                "No errors!"
-#define ERROR_CONFIG            "Configuration register error!"
-#define ERROR_SHUNT_VOLTAGE     "Shunt voltage error!"
-#define ERROR_BUS_VOLTAGE       "Bus voltage error!"
-#define ERROR_CURRENT           "Current error!"
-#define ERROR_POWER             "Power error!"
-#define ERROR_CALIBRATION       "Calibration error!"
+#define INA219_ERROR_OK                "No errors!"
+#define INA219_ERROR_CONFIG            "Configuration register error!"
+#define INA219_ERROR_SHUNT_VOLTAGE     "Shunt voltage error!"
+#define INA219_ERROR_BUS_VOLTAGE       "Bus voltage error!"
+#define INA219_ERROR_CURRENT           "Current error!"
+#define INA219_ERROR_POWER             "Power error!"
+#define INA219_ERROR_CALIBRATION       "Calibration error!"
 
 class INA219
 {

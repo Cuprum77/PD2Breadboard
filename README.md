@@ -23,7 +23,7 @@ So why settle for a limited, fixed power supply when you can have the ultimate U
 
 ## Technical Specifications
 - RP2040 microcontroller
-- 3.3V to 20V adjustable voltage levels[^1]
+- 3.3V to 21V adjustable voltage levels[^1]
 - 100W maximum power output[^2]
 - 1.47" high-resolution graphical LCD
 - 3-button interface
