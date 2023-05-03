@@ -10,7 +10,7 @@
 
 class FUSB302
 {
-public:
+protected:
 #pragma region Constructor and connection verification
     FUSB302(unsigned char address, i2c_inst_t* wire);
     bool verifyConnection();
@@ -29,6 +29,7 @@ public:
     void setControl3();
     void setMask1();
     void setPower();
+    void setReset();
     void setOCPreg();
     void setMaskA();
     void setMaskB();
@@ -293,8 +294,10 @@ public:
     unsigned char getTXFIFO();
 #pragma endregion
 
-protected:
     FUSB302_Data getData();
+    void setSend();
+    void writeMessage(unsigned char message);
+    unsigned char readMessage();
 private:
     unsigned char device_address;
     i2c_inst_t* i2c;

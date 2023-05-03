@@ -11,6 +11,51 @@ FUSB302_Data FUSB302::getData()
 }
 
 /**
+ * @brief Start the transmission of the data in the TX FIFO
+*/
+void FUSB302::setSend()
+{ 
+    // set the start bit
+    this->setTXStart();
+    // send the Control0 register
+    this->setControl0();
+}
+
+/**
+ * @brief Write message to the PD device
+ * @param data to write
+*/
+void FUSB302::writeMessage(unsigned char data)
+{
+    // if the TX FIFO is full, wait until it is empty
+    while(this->data.status1.TX_FULL)
+        this->getStatus1();
+
+    // write the data to the TX FIFO
+    this->setTXFIFO(data);
+    // transmit the data to the PD device
+    this->setFIFO();
+    // start the transmission
+    this->setSend();
+}
+
+/**
+ * @brief Read message from the PD device
+ * @return unsigned char
+*/
+unsigned char FUSB302::readMessage()
+{
+    // if the RX FIFO is empty, wait until it isn't
+    while(this->data.status1.RX_EMPTY)
+        this->getStatus1();
+
+    // fetch the FIFO from the PD device
+    this->getFIFO();
+    // read the data from the RX FIFO
+    return this->getRXFIFO();
+}
+
+/**
  * @private
  * @brief read a word from the USB PD
  * @param register_address the address to read from
@@ -53,6 +98,7 @@ void FUSB302::setAllRegisters()
     this->setControl3();
     this->setMask1();
     this->setPower();
+    this->setReset();
     this->setOCPreg();
     this->setMaskA();
     this->setMaskB();
@@ -168,6 +214,14 @@ void FUSB302::setMask1()
 void FUSB302::setPower()
 {
     this->writeWord(FUSB302_POWER_ADDR, this->data.power.get());
+}
+
+/**
+ * @brief Write data from cache to Reset register
+*/
+void FUSB302::setReset()
+{
+    this->writeWord(FUSB302_RESET_ADDR, this->data.reset.get());
 }
 
 /**
