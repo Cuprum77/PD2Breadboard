@@ -1,6 +1,30 @@
 #include "FUSB302.hpp"
 
-#pragma region Private/Protected methods
+/**
+ * @brief USB PD constructor
+ * @param wire Wire object
+ * @param address USB PD address
+ * @note This constructor will automatically call getAllRegisters() to get the current state of the USB PD chip
+*/
+FUSB302::FUSB302(unsigned char address, i2c_inst_t* wire)
+{
+    this->device_address = address;
+    this->i2c = wire;
+}
+
+/**
+ * @brief Verify that the INA219 is connected
+ * @return true if the INA219 is connected, false otherwise
+*/
+bool FUSB302::verifyConnection()
+{
+    // check if we get a response from the eeprom by dummy writing to it
+    unsigned char data;
+    // if the dummy write fails, it should return a negative number
+    int ret = i2c_read_blocking(this->i2c, this->device_address, &data, 1, false);
+    return !(ret < 0);
+}
+
 /**
  * @brief Get the Data object
  * @return FUSB302_Data
@@ -11,32 +35,23 @@ FUSB302_Data FUSB302::getData()
 }
 
 /**
- * @brief Start the transmission of the data in the TX FIFO
-*/
-void FUSB302::setSend()
-{ 
-    // set the start bit
-    this->setTXStart();
-    // send the Control0 register
-    this->setControl0();
-}
-
-/**
  * @brief Write message to the PD device
  * @param data to write
 */
 void FUSB302::writeMessage(unsigned char data)
 {
     // if the TX FIFO is full, wait until it is empty
-    while(this->data.status1.TX_FULL)
+    while(!this->data.status1.TX_EMPTY)
         this->getStatus1();
 
     // write the data to the TX FIFO
     this->setTXFIFO(data);
     // transmit the data to the PD device
     this->setFIFO();
-    // start the transmission
-    this->setSend();
+    // set the start bit
+    this->setTXStart();
+    // send the Control0 register
+    this->setControl0();
 }
 
 /**
@@ -53,6 +68,33 @@ unsigned char FUSB302::readMessage()
     this->getFIFO();
     // read the data from the RX FIFO
     return this->getRXFIFO();
+}
+
+/**
+ * @brief Parse the header of the PD message
+ * @param info the info struct to store the header information
+ * @param header the header to parse
+*/
+void FUSB302::parseHeader(FUSB302_Message_Info_t* info, unsigned short header)
+{
+}
+
+/**
+ * @brief Generate the header for the PD message
+ * @param protocol the protocol to use
+ * @param message_type the type of the message
+ * @param object_count the number of objects in the message
+ * @return unsigned short
+*/
+unsigned short FUSB302::generateHeader(FUSB302_Protocol_t* protocol, unsigned char message_type, unsigned char object_count)
+{
+    // Header is described in 6.2.1.1 of the USB PD specs
+    unsigned short header = (message_type & 0x0f) << 0 |
+                            (PD_SPEC_REV & 0x03) << 6 |
+                            (protocol->message_id & 0x07) << 9 |
+                            (object_count & 0x07) << 12;
+    protocol->tx_message_header = header;
+    return header;
 }
 
 /**

@@ -403,6 +403,10 @@ void processUSBData()
 		id = usbPD.revisionID();
 		printf("Revision ID: %d\n", id);
 	}
+	else if(strcmp(buffer, FUSB302_GET_CAPABILITY) == 0)
+	{
+		
+	}
 
 	// clear the buffer
 	memset(buffer, 0, sizeof(buffer));
@@ -520,7 +524,35 @@ void core1Main()
 		display.write("PPS: ");
 		display.print(usbPD.ppsCapable());
 		display.print();
-		display.print("V_CAP:");
+		display.write("V_CAP: ");
+		
+		auto voltages = usbPD.supportedVoltages();
+		if(voltages & USB_PD_VOLTAGE_5V)
+		{
+			display.write("5V");
+			if(voltages == 0x1)
+				display.write("?");
+			else
+				display.print();
+		}
+		else
+			display.print();
+		if(voltages & USB_PD_VOLTAGE_9V)
+			display.write("9V ");
+		else 
+			display.write("	");
+		if(voltages & USB_PD_VOLTAGE_12V)
+			display.print("12V ");
+		else 
+			display.print();
+		if(voltages & USB_PD_VOLTAGE_15V)
+			display.write("15V ");
+		else 
+			display.write("	");
+		if(voltages & USB_PD_VOLTAGE_20V)
+			display.print("20V ");
+		else
+			display.print();
 
 		
 
@@ -581,14 +613,7 @@ int main()
 	{
 		unsigned long core0Time = time_us_32();
 		usbPD.update();
-
-		static unsigned long lastPolling = 0;
-		if((time_us_32() - lastPolling) < 100000)
-		{
-			ina219.getData();
-			lastPolling = time_us_32();
-		}
-	
+		ina219.getData();	
 		processUSBData();
 		buttonHandler();
 		//overCurrentLEDs();

@@ -17,9 +17,9 @@ typedef enum : unsigned int
 
 typedef enum : unsigned int
 {
-    USB_PD_VOLTAGE_5V = 0x0,
-    USB_PD_VOLTAGE_9V = 0x1,
-    USB_PD_VOLTAGE_12V = 0x2,
-    USB_PD_VOLTAGE_15V = 0x4,
-    USB_PD_VOLTAGE_20V = 0x8,
+    USB_PD_VOLTAGE_5V = 0x1,
+    USB_PD_VOLTAGE_9V = 0x2,
+    USB_PD_VOLTAGE_12V = 0x4,
+    USB_PD_VOLTAGE_15V = 0x8,
+    USB_PD_VOLTAGE_20V = 0x10,
 } USB_PD_Voltages;

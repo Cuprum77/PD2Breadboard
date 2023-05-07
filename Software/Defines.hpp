@@ -88,6 +88,7 @@
 // FUSB302 codes
 #define FUSB302_DUMP_DATA           "dump_usb"
 #define FUSB302_GET_IDENTITY        "get_identity"
+#define FUSB302_GET_CAPABILITY      "get_capability"
 
 // display codes
 #define BACKLIGHT_CODE              "backlight:"

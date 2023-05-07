@@ -1,32 +1,5 @@
 #include <FUSB302.hpp>
 
-#pragma region Constructor and connection verification
-/**
- * @brief USB PD constructor
- * @param wire Wire object
- * @param address USB PD address
- * @note This constructor will automatically call getAllRegisters() to get the current state of the USB PD chip
-*/
-FUSB302::FUSB302(unsigned char address, i2c_inst_t* wire)
-{
-    this->device_address = address;
-    this->i2c = wire;
-}
-
-/**
- * @brief Verify that the INA219 is connected
- * @return true if the INA219 is connected, false otherwise
-*/
-bool FUSB302::verifyConnection()
-{
-    // check if we get a response from the eeprom by dummy writing to it
-    unsigned char data;
-    // if the dummy write fails, it should return a negative number
-    int ret = i2c_read_blocking(this->i2c, this->device_address, &data, 1, false);
-    return !(ret < 0);
-}
-#pragma endregion
-
 #pragma region Device ID register abstraction
 /**
  * @brief Get the device ID

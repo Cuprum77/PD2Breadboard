@@ -3,10 +3,13 @@
 #include "FUSB302_Registers.hpp"
 #include "FUSB302_Data.hpp"
 #include "FUSB302_Enum.hpp"
+#include "FUSB302_Structs.hpp"
 
 #include <stdio.h>
 #include "pico/stdlib.h"
 #include "hardware/i2c.h"
+
+#define PD_SPEC_REV 0x2 // FUSB302 only supports PD specification 2.0
 
 class FUSB302
 {
@@ -295,9 +298,12 @@ protected:
 #pragma endregion
 
     FUSB302_Data getData();
-    void setSend();
+    // pay attention to 6.2.1.1 in the PD specs
     void writeMessage(unsigned char message);
     unsigned char readMessage();
+    void parseHeader(FUSB302_Message_Info_t* info, unsigned short header);
+    unsigned short generateHeader(FUSB302_Protocol_t* protocol,  unsigned char message_type, unsigned char object_count);
+    unsigned short generateExtendedHeader(FUSB302_Protocol_t* protocol, unsigned char message_type, unsigned char data_size, unsigned int* object);
 private:
     unsigned char device_address;
     i2c_inst_t* i2c;

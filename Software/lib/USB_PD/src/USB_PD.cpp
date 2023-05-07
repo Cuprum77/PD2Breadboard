@@ -55,8 +55,9 @@ void USB_PD::update()
 */
 void USB_PD::getConnection()
 {
-    // get the device voltages
-    //this->getDeviceCaps();
+    // check the CC line status
+    
+
 }
 
 /**
