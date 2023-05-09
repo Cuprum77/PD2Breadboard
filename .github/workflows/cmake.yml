@@ -32,6 +32,9 @@ jobs:
       id: core_count
       run : cat /proc/cpuinfo  | grep processor | wc -l
       #End Global Setup
+      
+    - name: Setup PD2Breadboard
+      working-directory: ./Software
 
     - name: Pico Build Configure CMake
       shell: bash
