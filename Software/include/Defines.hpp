@@ -138,7 +138,6 @@
 #include "USB_PD.hpp"
 #include "INA219.hpp"
 #include "Memory.hpp"
-#include "Background.h"
 #include "Version.h"
 
 

@@ -15,7 +15,7 @@ pico_sdk_init()
 
 # Tell CMake where to find the executable source file
 add_executable(${PROJECT_NAME} 
-    ${CMAKE_CURRENT_LIST_DIR}/main.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/src/main.cpp
 )
 
 # Add all the source files in the lib directory to the project
@@ -56,6 +56,7 @@ configure_file(
 )
 
 include_directories(${CMAKE_BINARY_DIR}/generated)
+include_directories(${CMAKE_BINARY_DIR}/include)
 
 add_subdirectory(${CMAKE_SOURCE_DIR}/lib/Button)
 add_subdirectory(${CMAKE_SOURCE_DIR}/lib/Display)

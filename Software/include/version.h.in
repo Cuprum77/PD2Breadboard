@@ -1,5 +1,3 @@
-#pragma once
-
 // Thanks to Xit0 for this snippet
 // http://xit0.org/2013/04/cmake-use-git-branch-and-commit-details-in-project/
 
