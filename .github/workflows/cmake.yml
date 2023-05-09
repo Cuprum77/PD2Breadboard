@@ -32,15 +32,14 @@ jobs:
       id: core_count
       run : cat /proc/cpuinfo  | grep processor | wc -l
       #End Global Setup
-      
-    - name: Setup PD2Breadboard
-      working-directory: ./Software
 
     - name: Pico Build Configure CMake
+      working-directory: ./Software
       shell: bash
       run: PICO_SDK_PATH=${{github.workspace}}/pico-sdk SKIP_WEBBUILD=TRUE cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
 
     - name: Pico Build
+      working-directory: ./Software
       shell: bash
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel ${{steps.core_count.outputs.output}}
  
