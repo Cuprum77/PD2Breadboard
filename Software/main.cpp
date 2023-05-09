@@ -1,4 +1,4 @@
-#include "Defines.hpp"
+#include "include/Defines.hpp"
 
 // set the variables to the default values in case we fail to retrieve the data from the EEPROM
 unsigned int currentNegotiated = CURRENT_SETTING_DEFAULT;
@@ -406,6 +406,14 @@ void processUSBData()
 	else if(strcmp(buffer, FUSB302_GET_CAPABILITY) == 0)
 	{
 		
+	}
+	else if(strcmp(buffer, GET_HASH) == 0)
+	{
+		printf("Hash: %s\n", GIT_COMMIT_HASH);
+	}
+	else if(strcmp(buffer, GET_BRANCH) == 0)
+	{
+		printf("Branch: %s\n", GIT_BRANCH);
 	}
 
 	// clear the buffer

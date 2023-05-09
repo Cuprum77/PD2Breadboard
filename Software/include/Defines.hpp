@@ -77,6 +77,8 @@
 #define REBOOT_TO_BOOTLOADER_CODE   "reboot_to_bootloader"
 #define RESET_CODE                  "reset"
 #define GET_SETTINGS_CODE           "get_settings"
+#define GET_HASH                    "get_hash"
+#define GET_BRANCH                  "get_branch"
 
 // INA219 codes
 #define CURRENT_LIMIT_CODE          "current_limit:"
@@ -137,6 +139,7 @@
 #include "INA219.hpp"
 #include "Memory.hpp"
 #include "Background.h"
+#include "Version.h"
 
 
 
@@ -151,7 +154,7 @@
 
 bi_decl(bi_program_name("USB-PD Power Supply"));
 bi_decl(bi_program_description("Your own USB-PD variable power supply with an active circuit breaker."));
-bi_decl(bi_program_version_string("1.0.0"));
+bi_decl(bi_program_version_string(GIT_COMMIT_HASH));
 bi_decl(bi_program_url("https://github.com/Cuprum77/PD2Breadboard"));
 
 bi_decl(bi_4pins_with_names(DISP_PIN_CS, "SPI Chip Select", DISP_PIN_SCK, "SPI Clock", DISP_PIN_MOSI, "SPI Data", DISP_PIN_RST, "SPI Reset"));
