@@ -31,7 +31,9 @@ Hardware/Rev 2/USB-PD-backups/
 
 # VSCode
 Software/.vscode/
+Software/build/
 .vscode/
+*.u2f
 
 # GIMP
 *.xcf
