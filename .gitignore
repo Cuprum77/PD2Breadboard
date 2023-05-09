@@ -33,7 +33,7 @@ Hardware/Rev 2/USB-PD-backups/
 Software/.vscode/
 Software/build/
 .vscode/
-*.u2f
+*.uf2
 
 # GIMP
 *.xcf
