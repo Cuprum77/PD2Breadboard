@@ -32,6 +32,7 @@ typedef enum
     DarkOrange = 0xfc60,
     Gold = 0xfea0,
     Piss = 0xe702,
+    Derg = 0x0dfb,
 } Colors;
 
 struct Color
