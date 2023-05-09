@@ -26,7 +26,8 @@ fp-info-cache
 *.csv
 
 # Backup Files
-Hardware/USB-PD-backups/
+Hardware/Rev 1/USB-PD-backups/
+Hardware/Rev 2/USB-PD-backups/
 
 # VSCode
 Software/.vscode/
