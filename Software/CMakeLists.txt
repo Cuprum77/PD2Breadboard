@@ -47,8 +47,59 @@ execute_process(
   OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 
-add_definitions("-DGIT_COMMIT_HASH=${GIT_COMMIT_HASH}")
+# Get the latest commit date of the working branch
+execute_process(
+  COMMAND git log -1 --format=%cd
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+  OUTPUT_VARIABLE GIT_COMMIT_DATE
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+# Get the project authors from the git log
+execute_process(
+  COMMAND git show -s "--format=%an"
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+  OUTPUT_VARIABLE GIT_AUTHOR
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+# Get the latest commit subject of the working branch
+execute_process(
+  COMMAND git log -1 --format=%s
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+  OUTPUT_VARIABLE GIT_COMMIT_SUBJECT
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+# Get the latest commit body of the working branch
+execute_process(
+  COMMAND git log -1 --format=%b
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+  OUTPUT_VARIABLE GIT_COMMIT_BODY
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+# Check if the working branch is dirty
+execute_process(
+  COMMAND git status --porcelain
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+  OUTPUT_VARIABLE GIT_COMMIT_DIRTY
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+if(NOT "${GIT_COMMIT_DIRTY}" STREQUAL "")
+  set(GIT_COMMIT_DIRTY "true")
+else()
+  set(GIT_COMMIT_DIRTY "false")
+endif()
+
 add_definitions("-DGIT_BRANCH=${GIT_BRANCH}")
+add_definitions("-DGIT_AUTHOR=${GIT_AUTHOR}")
+add_definitions("-DGIT_COMMIT_HASH=${GIT_COMMIT_HASH}")
+add_definitions("-DGIT_COMMIT_DATE=${GIT_COMMIT_DATE}")
+add_definitions("-DGIT_COMMIT_SUBJECT=${GIT_COMMIT_SUBJECT}")
+add_definitions("-DGIT_COMMIT_BODY=${GIT_COMMIT_BODY}")
+add_definitions("-DGIT_COMMIT_DIRTY=${GIT_COMMIT_DIRTY}")
 
 configure_file(
   ${CMAKE_SOURCE_DIR}/include/version.h.in
