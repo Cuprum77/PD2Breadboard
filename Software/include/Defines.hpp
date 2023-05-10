@@ -77,8 +77,12 @@
 #define REBOOT_TO_BOOTLOADER_CODE   "reboot_to_bootloader"
 #define RESET_CODE                  "reset"
 #define GET_SETTINGS_CODE           "get_settings"
-#define GET_HASH                    "get_hash"
-#define GET_BRANCH                  "get_branch"
+#define GET_HASH                    "git_hash"
+#define GET_BRANCH                  "git_branch"
+#define GET_AUTHOR                  "git_author"
+#define GET_DATE                    "git_date"
+#define GET_SUBJECT                 "git_subject"
+#define GET_MESSAGE                 "git_message"
 
 // INA219 codes
 #define CURRENT_LIMIT_CODE          "current_limit:"

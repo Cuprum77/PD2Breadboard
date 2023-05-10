@@ -10,6 +10,15 @@ typedef struct
 
 typedef struct
 {
+    unsigned short type;
+    unsigned short spec_rev;
+    unsigned short id;
+    unsigned short number_of_objects;
+} FUSB302_Message_Header_t;
+
+
+typedef struct
+{
     const char* name;
     unsigned char id;
     unsigned char spec_rev;

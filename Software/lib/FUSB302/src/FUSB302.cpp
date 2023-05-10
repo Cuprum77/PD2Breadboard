@@ -40,21 +40,17 @@ FUSB302_Data FUSB302::getData()
 */
 void FUSB302::writeHeader(unsigned short data)
 {
-    for(int i = 0; i < 2; i++)
-    {
-        // if the TX FIFO is full, wait until it is empty
-        while(!this->data.status1.TX_EMPTY)
-            this->getStatus1();
+    // if the TX FIFO is full, wait until it is empty
+    while(!this->data.status1.TX_EMPTY)
+        this->getStatus1();
 
-        // write the data to the TX FIFO
-        this->setTXFIFO(data >> (i * 8));
-        // transmit the data to the PD device
-        this->setFIFO();
-        // set the start bit
-        this->setTXStart();
-        // send the Control0 register
-        this->setControl0();
-    }
+    // write the data to the TX FIFO
+    unsigned char _data[2] = {data & 0xff, (data >> 8) & 0xff};
+    this->writeWord(FUSB302_FIFO_ADDR, _data, 2);
+    // set the start bit
+    this->setTXStart();
+    // send the Control0 register
+    this->setControl0();
 }
 
 /**
@@ -63,21 +59,15 @@ void FUSB302::writeHeader(unsigned short data)
 */
 unsigned short FUSB302::readHeader()
 {
-    unsigned short data;
+    unsigned char data[3], len;
 
-    for(int i = 0; i < 2; i++)
-    {
-        // if the RX FIFO is empty, wait until it isn't
-        while(this->data.status1.RX_EMPTY)
-            this->getStatus1();
+    // if the RX FIFO is empty, wait until it isn't
+    while(this->data.status1.RX_EMPTY)
+        this->getStatus1();
 
-        // fetch the FIFO from the PD device
-        this->getFIFO();
-        // read the data from the RX FIFO
-        data |= this->getRXFIFO() << (i * 8);
-    }
+    this->readWord(FUSB302_FIFO_ADDR, data, 3);
 
-    return data;
+    return data[2] << 8 | data[1];
 }
 
 /**
@@ -85,8 +75,12 @@ unsigned short FUSB302::readHeader()
  * @param info the info struct to store the header information
  * @param header the header to parse
 */
-void FUSB302::parseHeader(FUSB302_Message_Info_t* info, unsigned short header)
+void FUSB302::parseHeader(FUSB302_Message_Header_t* info, unsigned short header)
 {
+    info->type = header & 0x0f;
+    info->spec_rev = (header >> 6) & 0x03;
+    info->id = (header >> 9) & 0x07;
+    info->number_of_objects = (header >> 12) & 0x07;
 }
 
 /**
@@ -123,6 +117,19 @@ unsigned char FUSB302::readWord(unsigned char register_address)
 
 /**
  * @private
+ * @brief read a word from the USB PD
+ * @param register_address the address to read from
+ * @param data the word to read from the USB PD
+ * @param length the length of the data to read
+*/
+void FUSB302::readWord(unsigned char register_address, unsigned char *data, size_t length)
+{
+    i2c_write_blocking(this->i2c, this->device_address, &register_address, 1, false);
+    i2c_read_blocking(this->i2c, this->device_address, data, length, false);
+}
+
+/**
+ * @private
  * @brief write a word to the USB PD
  * @param register_address the address to write to
  * @param data the word to write to the USB PD
@@ -131,6 +138,19 @@ void FUSB302::writeWord(unsigned char register_address, unsigned char data)
 {
     unsigned char buffer[2] = {register_address, data};
     i2c_write_blocking(this->i2c, this->device_address, buffer, 2, false);
+}
+
+/**
+ * @private
+ * @brief write a word to the USB PD
+ * @param register_address the address to write to
+ * @param data the word to write to the USB PD
+ * @param length the length of the data to write
+*/
+void FUSB302::writeWord(unsigned char register_address, unsigned char *data, size_t length)
+{
+    i2c_write_blocking(this->i2c, this->device_address, &register_address, 1, true);
+    i2c_write_blocking(this->i2c, this->device_address, data, length, false);
 }
 #pragma endregion
 

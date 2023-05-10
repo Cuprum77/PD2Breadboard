@@ -53,24 +53,68 @@ void USB_PD::update()
  * @brief Get the connection status of the USB PD controller
  * @note This will check if the power supply is PD and PPS capable
 */
-void USB_PD::getConnection()
+unsigned int USB_PD::getConnection()
 {
     // check the CC line status
     FUSB302_Protocol_t protocol;
     unsigned short header = this->generateHeader(
         &protocol, 
-        FUSB302_MessageType::Get_Sink_Cap,
+        FUSB302_MessageType::Get_Source_Cap,
         0
     );
 
     // transmit the header
     this->writeHeader(header);
-
     // get the response
     header = this->readHeader();
+    // parse the response
+    FUSB302_Message_Header_t response;
+    this->parseHeader(&response, header);
 
     // print the header
     printf("Header: %x\n", header);
+    return response.type;
+}
+
+const char* USB_PD::typeToString(FUSB302_MessageType type)
+{
+    switch(type)
+    {
+        case FUSB302_MessageType::RESERVED:
+            return PD_TYPE_0;
+        case FUSB302_MessageType::GoodCRC:
+            return PD_TYPE_1;
+        case FUSB302_MessageType::GoToMin:
+            return PD_TYPE_2;
+        case FUSB302_MessageType::Accept:
+            return PD_TYPE_3;
+        case FUSB302_MessageType::Reject:
+            return PD_TYPE_4;
+        case FUSB302_MessageType::Ping:
+            return PD_TYPE_5;
+        case FUSB302_MessageType::PS_RDY:
+            return PD_TYPE_6;
+        case FUSB302_MessageType::Get_Source_Cap:
+            return PD_TYPE_7;
+        case FUSB302_MessageType::Get_Sink_Cap:
+            return PD_TYPE_8;
+        case FUSB302_MessageType::DR_Swap:
+            return PD_TYPE_9;
+        case FUSB302_MessageType::PR_Swap:
+            return PD_TYPE_10;
+        case FUSB302_MessageType::VCONN_Swap:
+            return PD_TYPE_11;
+        case FUSB302_MessageType::Wait:
+            return PD_TYPE_12;
+        case FUSB302_MessageType::Soft_Reset:
+            return PD_TYPE_13;
+        case FUSB302_MessageType::Data_Reset:
+            return PD_TYPE_14;
+        case FUSB302_MessageType::Data_Reset_Complete:
+            return PD_TYPE_15;
+        default:
+            return "Unknown";
+    }
 }
 
 /**

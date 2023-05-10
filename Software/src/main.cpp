@@ -501,6 +501,7 @@ void core1Main()
 	//display.drawBitmap(Point(), BACKGROUND_PIXEL_DATA, BACKGROUND_WIDTH, BACKGROUND_HEIGHT);
 	
 	Point start = Point(0, 5);
+	Point typePoint = Point(0, 0);
 
 	unsigned long lastUpdate = 0;
 	while(1)
@@ -542,6 +543,8 @@ void core1Main()
 		}
 		else
 			display.print();
+		typePoint = display.getCursor();
+
 		if(voltages & USB_PD_VOLTAGE_9V)
 			display.write("9V ");
 		else 
@@ -558,13 +561,14 @@ void core1Main()
 			display.print("20V ");
 		else
 			display.print();
-
 		
 
-		// redo the background every 5 seconds
-		if((time_us_32() - lastUpdate) > 5000000)
+		// redo the background every 1 seconds
+		if((time_us_32() - lastUpdate) > 1000000)
 		{
 			display.fill(Colors::RaspberryRed);
+			display.setCursor(typePoint);
+			display.print(usbPD.typeToString((FUSB302_MessageType)usbPD.getConnection()));
 			lastUpdate = time_us_32();
 		}
 	}

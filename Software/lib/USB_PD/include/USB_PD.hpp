@@ -2,6 +2,7 @@
 
 #include "FUSB302.hpp"
 #include "PD_Errors.hpp"
+#include "PD_Enums.hpp"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -15,7 +16,8 @@ public:
     USB_PD(unsigned char address, i2c_inst_t* wire, unsigned int pin);
     void init();
     void update();
-    void getConnection();
+    unsigned int getConnection();
+    const char* typeToString(FUSB302_MessageType type);
     void reset();
     void enablePPS();
     bool pdCapable();

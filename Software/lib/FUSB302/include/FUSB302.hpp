@@ -301,7 +301,7 @@ protected:
     // pay attention to 6.2.1.1 in the PD specs
     void writeHeader(unsigned short header);
     unsigned short readHeader();
-    void parseHeader(FUSB302_Message_Info_t* info, unsigned short header);
+    void parseHeader(FUSB302_Message_Header_t* info, unsigned short header);
     unsigned short generateHeader(FUSB302_Protocol_t* protocol,  unsigned char message_type, unsigned char object_count);
     unsigned short generateExtendedHeader(FUSB302_Protocol_t* protocol, unsigned char message_type, unsigned char data_size, unsigned int* object);
 private:
@@ -310,5 +310,7 @@ private:
     FUSB302_Data data;
 
     unsigned char readWord(unsigned char register_address);
+    void readWord(unsigned char register_address, unsigned char *data, size_t length);
     void writeWord(unsigned char register_address, unsigned char data);
+    void writeWord(unsigned char register_address, unsigned char *data, size_t length);
 };
