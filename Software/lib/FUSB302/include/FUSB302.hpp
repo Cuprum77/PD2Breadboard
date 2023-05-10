@@ -299,8 +299,8 @@ protected:
 
     FUSB302_Data getData();
     // pay attention to 6.2.1.1 in the PD specs
-    void writeMessage(unsigned char message);
-    unsigned char readMessage();
+    void writeHeader(unsigned short header);
+    unsigned short readHeader();
     void parseHeader(FUSB302_Message_Info_t* info, unsigned short header);
     unsigned short generateHeader(FUSB302_Protocol_t* protocol,  unsigned char message_type, unsigned char object_count);
     unsigned short generateExtendedHeader(FUSB302_Protocol_t* protocol, unsigned char message_type, unsigned char data_size, unsigned int* object);

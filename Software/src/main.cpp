@@ -405,7 +405,7 @@ void processUSBData()
 	}
 	else if(strcmp(buffer, FUSB302_GET_CAPABILITY) == 0)
 	{
-		
+		usbPD.getConnection();
 	}
 	else if(strcmp(buffer, GET_HASH) == 0)
 	{

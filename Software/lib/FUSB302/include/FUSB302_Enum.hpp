@@ -151,3 +151,23 @@ typedef enum : unsigned int
     // >1.23V
     BC_LVL_1230mV_MAX
 } FUSB302_BC_LVL;
+
+typedef enum : unsigned int
+{
+    RESERVED = 0x0,
+    GoodCRC,
+    GoToMin,
+    Accept,
+    Reject,
+    Ping,
+    PS_RDY,
+    Get_Source_Cap,
+    Get_Sink_Cap,
+    DR_Swap,
+    PR_Swap,
+    VCONN_Swap,
+    Wait,
+    Soft_Reset,
+    Data_Reset,
+    Data_Reset_Complete,
+} FUSB302_MessageType;

@@ -56,8 +56,21 @@ void USB_PD::update()
 void USB_PD::getConnection()
 {
     // check the CC line status
-    
+    FUSB302_Protocol_t protocol;
+    unsigned short header = this->generateHeader(
+        &protocol, 
+        FUSB302_MessageType::Get_Sink_Cap,
+        0
+    );
 
+    // transmit the header
+    this->writeHeader(header);
+
+    // get the response
+    header = this->readHeader();
+
+    // print the header
+    printf("Header: %x\n", header);
 }
 
 /**
