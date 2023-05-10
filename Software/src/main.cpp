@@ -527,12 +527,13 @@ void core1Main()
 		hz = 1/((float)core1RunTime * 0.000001);
 		display.write(hz, 2);
 		display.print("Hz");
-		display.write("PD: ");
-		display.print(usbPD.pdCapable());
-		display.write("PPS: ");
-		display.print(usbPD.ppsCapable());
-		display.print();
-		display.write("V_CAP: ");
+		display.write("#: ");
+		display.print(GIT_COMMIT_HASH);
+		display.write("B: ");
+		char branch[8] = {0};
+		memcpy(branch, &GIT_BRANCH, 7);
+		display.print(branch);
+		display.write("\nV_CAP: ");
 		
 		auto voltages = usbPD.supportedVoltages();
 		if(voltages & USB_PD_VOLTAGE_5V)
