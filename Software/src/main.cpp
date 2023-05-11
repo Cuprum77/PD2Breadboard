@@ -178,6 +178,37 @@ void overCurrentLEDs()
 	ledStates = !ledStates;
 }
 
+/**
+ * @brief Handle the register access from writing to them or reading from them
+ * @note Has to be called every loop
+ * @param all If true, all registers will be handled, if false, only the ones that have changed will be handled
+*/
+void RegisterHandler(bool all = false)
+{
+	if(all)
+	{
+		if(registers.getProtected(Register_Address::Device_Reboot_Bootloader))
+		{
+			// reset the device into bootloader mode
+			// the intellisense doesnt like this function so we have to disable it until we build
+#ifndef __INTELLISENSE__
+			multicore_reset_core1();
+			reset_usb_boot(0, 0);
+			while(1);
+#endif			
+		}
+		if(registers.getProtected(Register_Address::Device_Reset))
+		{
+			watchdog_reboot(0, SRAM_END, 0);
+			while(1);
+		}
+	}
+	else
+	{
+
+	}
+}
+
 // empty buffer to store the data
 char buffer[8] = {0};
 /**
@@ -235,6 +266,9 @@ void processUSBData()
 			// write the data to the register
 			registers.set((Register_Address)buffer[1], data);
 		}
+
+		// go through all the registers to act on change
+		RegisterHandler(true);
 	}
 	else
 	{
@@ -464,6 +498,7 @@ int main()
 		usbPD.update();
 		ina219.getData();	
 		processUSBData();
+		RegisterHandler();
 		buttonHandler();
 		//overCurrentLEDs();
 
