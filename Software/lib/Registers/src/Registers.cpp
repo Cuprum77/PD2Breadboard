@@ -107,6 +107,37 @@ unsigned int Registers::get(Register_Address address, unsigned int position)
 }
 
 /**
+ * @brief Gets the value of a register
+ * @param address Address of the register
+ * @return Value of the register, or __UINT32_MAX__ if the register is non existent
+ * @note This bypasses the read only check! Do not use with external access!
+*/
+unsigned int Registers::getProtected(Register_Address address)
+{
+    Register* reg = this->registers.getRegister(address);
+    if (reg == NULL)
+        return __UINT32_MAX__;
+
+    return reg->value;
+}
+
+/**
+ * @brief Gets the value of a register array
+ * @param address Address of the register array
+ * @param position Position of the register in the array
+ * @return Value of the register, or __UINT32_MAX__ if the register is non existent
+ * @note This bypasses the read only check! Do not use with external access!
+*/
+unsigned int Registers::getProtected(Register_Address address, unsigned int position)
+{
+    RegisterArray* reg = this->registers.getRegisterArray(address);
+    if (reg == NULL)
+        return __UINT32_MAX__;
+
+    return reg->array[position];
+}
+
+/**
  * @brief Checks if a register is an array
  * @param address Address of the register
  * @return True if the register is an array, false otherwise
