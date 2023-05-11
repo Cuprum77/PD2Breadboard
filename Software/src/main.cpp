@@ -467,6 +467,12 @@ int main()
 		buttonHandler();
 		//overCurrentLEDs();
 
+		// transfer the data from the INA219 to the registers for external access
+		registers.setProtected(Register_Address::Bus_Voltage, ina219.getBusVoltageRaw());
+		registers.setProtected(Register_Address::Shunt_Voltage, ina219.getShuntVoltage());
+		registers.setProtected(Register_Address::Current, ina219.getCurrentRaw());
+		registers.setProtected(Register_Address::Power, ina219.getPowerRaw());
+
 		if(ina219.getCurrent() > currentLimit)
 			overcurrent = true;
 		else if (ina219.getCurrent() < (float)currentLimit * 0.8)

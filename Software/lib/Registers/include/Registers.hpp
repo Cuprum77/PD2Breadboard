@@ -7,6 +7,8 @@ class Registers
 {
 public:
     void reset();
+    void setProtected(Register_Address address, unsigned int value);
+    void setProtected(Register_Address address, unsigned int position, unsigned int value);
     void set(Register_Address address, unsigned int value);
     void set(Register_Address address, unsigned int position, unsigned int value);
     unsigned int get(Register_Address address);

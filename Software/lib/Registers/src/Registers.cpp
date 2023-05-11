@@ -12,6 +12,34 @@ void Registers::reset()
  * @brief Sets the value of a register
  * @param address Address of the register
  * @param value Value to set the register to
+ * @note This bypasses the read only check! Do not use with external access!
+*/
+void Registers::setProtected(Register_Address address, unsigned int value)
+{
+    Register* reg = this->registers.getRegister(address);
+    if (reg != NULL)
+        reg->value = value;
+}
+
+/**
+ * @brief Sets the value of a register array
+ * @param address Address of the register array
+ * @param position Position of the register in the array
+ * @param value Value to set the register to
+ * @note This bypasses the read only check! Do not use with external access!
+*/
+void Registers::setProtected(Register_Address address, unsigned int position, unsigned int value)
+{
+    RegisterArray* reg = this->registers.getRegisterArray(address);
+    if (reg != NULL)
+        reg->array[position] = value;
+}
+
+
+/**
+ * @brief Sets the value of a register
+ * @param address Address of the register
+ * @param value Value to set the register to
 */
 void Registers::set(Register_Address address, unsigned int value)
 {
