@@ -70,9 +70,6 @@ unsigned int USB_PD::getConnection()
     // parse the response
     FUSB302_Message_Header_t response;
     this->parseHeader(&response, header);
-
-    // print the header
-    printf("Header: %x\n", header);
     return response.type;
 }
 
