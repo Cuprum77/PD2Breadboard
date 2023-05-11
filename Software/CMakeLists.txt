@@ -13,24 +13,6 @@ set(CMAKE_CXX_STANDARD 17)
 # Creates a pico-sdk subdirectory in our project for the libraries
 pico_sdk_init()
 
-# Tell CMake where to find the executable source file
-add_executable(${PROJECT_NAME} 
-    ${CMAKE_CURRENT_LIST_DIR}/src/main.cpp
-)
-
-# Add all the source files in the lib directory to the project
-AUX_SOURCE_DIRECTORY(lib SUB_SOURCES)
-
-# Add the source files to the project
-target_sources(${PROJECT_NAME} PUBLIC 
-    ${SUB_SOURCES}
-)
-
-# Add the include directories to the project
-target_include_directories(${PROJECT_NAME} PUBLIC
-    ${CMAKE_CURRENT_LIST_DIR}
-)
-
 # Get the current working branch
 execute_process(
   COMMAND git rev-parse --abbrev-ref HEAD
@@ -109,12 +91,31 @@ configure_file(
 include_directories(${CMAKE_BINARY_DIR}/generated)
 include_directories(${CMAKE_BINARY_DIR}/include)
 
+# Tell CMake where to find the executable source file
+add_executable(${PROJECT_NAME} 
+    ${CMAKE_CURRENT_LIST_DIR}/src/main.cpp
+)
+
+# Add all the source files in the lib directory to the project
+AUX_SOURCE_DIRECTORY(lib SUB_SOURCES)
+
+# Add the source files to the project
+target_sources(${PROJECT_NAME} PUBLIC 
+    ${SUB_SOURCES}
+)
+
+# Add the include directories to the project
+target_include_directories(${PROJECT_NAME} PUBLIC
+    ${CMAKE_CURRENT_LIST_DIR}
+)
+
 add_subdirectory(${CMAKE_SOURCE_DIR}/lib/Button)
 add_subdirectory(${CMAKE_SOURCE_DIR}/lib/Display)
 add_subdirectory(${CMAKE_SOURCE_DIR}/lib/FUSB302)
 add_subdirectory(${CMAKE_SOURCE_DIR}/lib/USB_PD)
 add_subdirectory(${CMAKE_SOURCE_DIR}/lib/INA219)
 add_subdirectory(${CMAKE_SOURCE_DIR}/lib/Memory)
+add_subdirectory(${CMAKE_SOURCE_DIR}/lib/Registers)
 
 link_directories(${CMAKE_SOURCE_DIR}/lib/Button)
 link_directories(${CMAKE_SOURCE_DIR}/lib/Display)
@@ -122,6 +123,7 @@ link_directories(${CMAKE_SOURCE_DIR}/lib/FUSB302)
 link_directories(${CMAKE_SOURCE_DIR}/lib/USB_PD)
 link_directories(${CMAKE_SOURCE_DIR}/lib/INA219)
 link_directories(${CMAKE_SOURCE_DIR}/lib/Memory)
+link_directories(${CMAKE_SOURCE_DIR}/lib/Registers)
 
 # Create map/bin/hex/uf2 files
 pico_add_extra_outputs(${PROJECT_NAME})
@@ -136,6 +138,7 @@ target_link_libraries(${PROJECT_NAME}
     USB_PD
     INA219
     Memory
+    Registers
 )
 
 # Enable usb output, disable uart output

@@ -1,10 +1,10 @@
 #include "include/Defines.hpp"
 
 // set the variables to the default values in case we fail to retrieve the data from the EEPROM
-unsigned int currentNegotiated = CURRENT_SETTING_DEFAULT;
-unsigned int voltageNegotiated = VOLTAGE_SETTING_DEFAULT;
-unsigned int currentLimit = CURRENT_LIMIT_DEFAULT;
-unsigned int backlightBrightness = BACKLIGHT_DEFAULT;
+unsigned int currentNegotiated = Device_Target_Current_Default;
+unsigned int voltageNegotiated = Device_Target_Voltage_Default;
+unsigned int currentLimit = PFuse_Trip_Current_Default;
+unsigned int backlightBrightness = Display_Brightness_Default;
 
 // store the runtimes of the cores
 unsigned long core0RunTime = 0;
@@ -47,6 +47,7 @@ Display display(spi0, displayPins, displayParams, true);
 Memory memory(EEPROM_ADDRESS, i2c0);
 USB_PD usbPD(FUSB302_ADDRESS, i2c1, PD_INT_N);
 INA219 ina219(INA219_ADDRESS, i2c0);
+Registers registers;
 
 /**
  * @brief Initialize the I2C busses
@@ -177,47 +178,8 @@ void overCurrentLEDs()
 	ledStates = !ledStates;
 }
 
-/**
- * @brief Check if the string is a number
- * @param str The string to check
- * @return true if the string is a number
-*/
-bool isNumber(char* str)
-{
-	// loop through each digit
-	for(int i = 0; i < strlen(str); i++)
-	{
-		// check its ascii code to see if its a number
-		if(str[i] < 48 || str[i] > 57)
-			return false;
-	}
-	// return true as the string is a number
-	return true;
-}
-
-/**
- * @brief Convert the ascii number to an integer
- * @param str The string to convert
- * @return The integer value of the string
-*/
-unsigned int asciiToInt(char* str)
-{
-	// the number to return
-	int num = 0;
-	// loop through each digit
-	for(int i = 0; i < strlen(str); i++)
-	{
-		// convert the ascii code to a number
-		int digit = str[i] - 48;
-		// multiply the number by 10 and add the digit
-		num = (num * 10) + digit;
-	}
-	// return the number
-	return num;
-}
-
 // empty buffer to store the data
-char buffer[100] = {0};
+char buffer[8] = {0};
 /**
  * @brief Process the USB data
  * @note Has to be called every loop
@@ -229,191 +191,69 @@ void processUSBData()
 		return;
 
 	// read the data from the USB
-	tud_cdc_read(buffer, 99);
+	tud_cdc_read(buffer, 7);
 
-	// check if the data is a reset command
-	if(strcmp(buffer, REBOOT_TO_BOOTLOADER_CODE) == 0)
-	{
-		// reset the device into usb boot
-		// the intellisense doesnt like this function so we have to disable it until we build
-#ifndef __INTELLISENSE__
-		reset_usb_boot(LEFT_MOSFET_LED | RIGHT_MOSFET_LED, 0);
-		watchdog_reboot(0, SRAM_END, 0);
-		while(1);
-#endif
-	}
-	else if(strcmp(buffer, RESET_CODE) == 0)
-	{
-		watchdog_reboot(0, SRAM_END, 0);
-		while(1);
-	}
-	// check if we sent the command to change the current limit
-	else if(strncmp(buffer, CURRENT_LIMIT_CODE, sizeof(CURRENT_LIMIT_CODE) - 1) == 0)
-	{
-		// get the data from after the command
-		char* data = buffer + sizeof(CURRENT_LIMIT_CODE) - 1;
-		// verify that the data is a number
-		if(!isNumber(data))
+	/*
+		The new protocol works as follows:
+		- The first character indicates read or write (0 = read, 1 = write)
+		- The second character is the address
+		(IF WRITING)
 		{
-			printf("not a valid input!\n");
-			memset(buffer, 0, sizeof(buffer));
-			return;
+			(IF ARRAY)
+			- The third character is the index
+			- The next 4 characters are the data
+			(IF SINGLE)
+			- The next 4 characters are the data
 		}
-
-		// convert string to number
-		unsigned int _currentLimit = asciiToInt(data);
-		printf("current_limit:%d\n", _currentLimit);
-		// set the current limit in EEPROM and local variable
-		memory.writeWord(MEMORY_CURRENT_LIMIT_ADDRESS, _currentLimit);
-		currentLimit = _currentLimit;
-	}
-	// check if we sent the command to change the current setting
-	else if(strncmp(buffer, CURRENT_SETTING_CODE, sizeof(CURRENT_SETTING_CODE) - 1) == 0)
-	{
-		// get the data from after the command
-		char* data = buffer + sizeof(CURRENT_SETTING_CODE) - 1;
-		// verify that the data is a number
-		if(!isNumber(data))
+		(IF READING)
 		{
-			printf("not a valid input!\n");
-			memset(buffer, 0, sizeof(buffer));
-			return;
+			(IF ARRAY)
+			- The third character is the index
+			- Return the data
+			(IF SINGLE)
+			- Return the data
 		}
+	*/
 
-		// convert string to number
-		unsigned int currentSetting = asciiToInt(data);
-		printf("current_setting:%d\n", currentSetting);
-		// set the current setting in EEPROM and local variable
-		memory.writeWord(MEMORY_CURRENT_ADDRESS, currentSetting);
-		currentNegotiated = currentSetting;
-	}
-	// check if we sent the command to change the voltage setting
-	else if(strncmp(buffer, VOLTAGE_SETTING_CODE, sizeof(VOLTAGE_SETTING_CODE) - 1) == 0)
+	// check if we are reading or writing
+	bool isWrite = buffer[0] != 0;
+
+	// are we writing?
+	if(isWrite)
 	{
-		// get the data from after the command
-		char* data = buffer + sizeof(VOLTAGE_SETTING_CODE) - 1;
-		// verify that the data is a number
-		if(!isNumber(data))
+		// is it an array?
+		if(registers.isArray((Register_Address)buffer[1]))
 		{
-			printf("not a valid input!\n");
-			memset(buffer, 0, sizeof(buffer));
-			return;
+			unsigned int index = buffer[2];
+			unsigned int data = buffer[3] << 24 | buffer[4] << 16 | buffer[5] << 8 | buffer[6];
+			// write the data to the array
+			registers.set((Register_Address)buffer[1], index, data);
 		}
-
-		// convert string to number
-		unsigned int voltageSetting = asciiToInt(data);
-		printf("voltage_setting:%d\n", voltageSetting);
-		// set the voltage setting in EEPROM and local variable
-		memory.writeWord(MEMORY_VOLTAGE_ADDRESS, voltageSetting);
-		voltageNegotiated = voltageSetting;
-	}
-	// check if we sent the command to get all the measurements
-	else if(strcmp(buffer, GET_READINGS_CODE) == 0)
-	{
-		// print the measurements
-		printf("V: %.3f V, I: %.3f A, P: %.3f W\n", ina219.getVoltage(), ina219.getCurrent() / 1000, ina219.getPower() / 1000);
-	}
-	// check if we sent the command to get all the raw measurements
-	else if(strcmp(buffer, GET_READINGS_RAW_CODE) == 0)
-	{
-		// print the measurements
-		printf("V: %d, I: %d, P: %d\n", ina219.getBusVoltageRaw(), ina219.getShuntVoltageRaw(), ina219.getPowerRaw());
-	}
-	// check if we sent the command to change the display brightness
-	else if(strncmp(buffer, BACKLIGHT_CODE, sizeof(BACKLIGHT_CODE) - 1) == 0)
-	{
-		// get the data from after the command
-		char* data = buffer + sizeof(BACKLIGHT_CODE) - 1;
-		// verify that the data is a number
-		if(!isNumber(data))
+		else
 		{
-			printf("not a valid input!\n");
-			memset(buffer, 0, sizeof(buffer));
-			return;
-		}
-
-		// convert string to number
-		unsigned char brightness = (unsigned char)asciiToInt(data);
-		printf("backlight:%d\n", brightness);
-		// set the display brightness
-		memory.writeWord(MEMORY_BACKLIGHT_ADDRESS, brightness);
-		backlightBrightness = brightness;
-		display.setBrightness(brightness);
-	}
-	// check if we want to return the settings in console
-	else if(strcmp(buffer, GET_SETTINGS_CODE) == 0)
-	{
-		printf("Current limit: %d,  ", currentLimit);
-		printf("Current setting: %d,  ", currentNegotiated);
-		printf("Voltage setting: %d,  ", voltageNegotiated);
-		printf("Backlight: %.2f %% (%d)\n", (((float)backlightBrightness) / 255) * 100, backlightBrightness);
-	}
-	// verify that all peripherals are connected
-	else if(strcmp(buffer, TEST_CODE) == 0)
-	{
-		const char* connectedString = "YES";
-		const char* notConnectedString = "NO";
-
-		printf("EEPROM connected: %s\n",
-			memory.verifyConnection() ? 
-				connectedString : notConnectedString);
-		printf("INA219 connected: %s\n", 
-			ina219.verifyConnection() ? 
-				connectedString : notConnectedString);
-		printf("FUSB302 connected: %s\n", 
-			usbPD.verifyConnection() ? 
-				connectedString : notConnectedString);
-
-		if(memory.verifyConnection())
-		{
-			printf("\nVerifying that the EEPROM is working...\n");
-			int errors = memory.selfTest();
-			if(errors == 0)
-				printf("EEPROM self test passed!\n");
-			else if(errors > 0)
-				printf("EEPROM self test failed! Bad read/writes: %d\n", errors);
-		}
-
-		if(ina219.verifyConnection())
-		{
-			printf("\nVerifying that the INA219 is working...\n");
-			int errors = ina219.selfTest();
-			const char* errorStringINA = ina219.selfTestToString(errors);
-			printf("INA219 self test results: %s\n", errorStringINA);
-		}
-
-		if(usbPD.verifyConnection())
-		{
-			printf("\nVerifying that the FUSB302 is working...\n");
-			int errors = usbPD.selfTest();
-			const char* errorStringPD = usbPD.selfTestToString(errors);
-			printf("FUSB302 self test results: %s\n", errorStringPD);
+			unsigned int data = buffer[2] << 24 | buffer[3] << 16 | buffer[4] << 8 | buffer[5];
+			// write the data to the register
+			registers.set((Register_Address)buffer[1], data);
 		}
 	}
-	else if(strcmp(buffer, FUSB302_DUMP_DATA) == 0)
+	else
 	{
-		usbPD.printRegisters();
-	}
-	else if(strcmp(buffer, FUSB302_GET_IDENTITY) == 0)
-	{
-		int id = usbPD.deviceID();
-		printf("ID: %d\n", id);
-		id = usbPD.productID();
-		printf("Product ID: %d\n", id);
-		id = usbPD.revisionID();
-		printf("Revision ID: %d\n", id);
-	}
-	else if(strcmp(buffer, FUSB302_GET_CAPABILITY) == 0)
-	{
-		usbPD.getConnection();
-	}
-	else if(strcmp(buffer, GET_HASH) == 0)
-	{
-		printf("Hash: %s\n", GIT_COMMIT_HASH);
-	}
-	else if(strcmp(buffer, GET_BRANCH) == 0)
-	{
-		printf("Branch: %s\n", GIT_BRANCH);
+		// is it an array?
+		if(registers.isArray((Register_Address)buffer[1]))
+		{
+			unsigned int index = buffer[2];
+			// read the data from the array
+			unsigned int data = registers.get((Register_Address)buffer[1], index);
+			// send the data back
+			printf("%d\n", data);
+		}
+		else
+		{
+			// read the data from the register
+			unsigned int data = registers.get((Register_Address)buffer[1]);
+			// send the data back
+			printf("%d\n", data);
+		}
 	}
 
 	// clear the buffer
@@ -456,7 +296,7 @@ void buttonHandler()
 	}
 	if(buttonDown.isClicked())
 	{
-		currentLimit -= CURRENT_STEPS; 
+		currentLimit -= 50; 
 		printf("DOWN\n");
 	}
 	if(buttonUp.isHeld())
@@ -465,7 +305,7 @@ void buttonHandler()
 	}
 	if(buttonUp.isClicked())
 	{
-		currentLimit += CURRENT_STEPS;
+		currentLimit += 50;
 		printf("UP\n");
 	}
 

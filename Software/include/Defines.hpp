@@ -65,43 +65,6 @@
 // System constants
 #define MULTICORE_FLAG_VALUE        0x69
 
-// default values
-#define CURRENT_LIMIT_DEFAULT       3000    // mA
-#define CURRENT_SETTING_DEFAULT     1000    // mA
-#define VOLTAGE_SETTING_DEFAULT     5000    // mV
-#define BACKLIGHT_DEFAULT           255     // 0-255
-#define VOLTAGE_STEPS               20      // USB PPS voltage steps in mV
-#define CURRENT_STEPS               50      // USB PPS current steps in mA
-
-// serial interface codes
-#define REBOOT_TO_BOOTLOADER_CODE   "reboot_to_bootloader"
-#define RESET_CODE                  "reset"
-#define GET_SETTINGS_CODE           "get_settings"
-#define GET_HASH                    "git_hash"
-#define GET_BRANCH                  "git_branch"
-#define GET_AUTHOR                  "git_author"
-#define GET_DATE                    "git_date"
-#define GET_SUBJECT                 "git_subject"
-#define GET_MESSAGE                 "git_message"
-
-// INA219 codes
-#define CURRENT_LIMIT_CODE          "current_limit:"
-#define CURRENT_SETTING_CODE        "current_setting:"
-#define VOLTAGE_SETTING_CODE        "voltage_setting:"
-#define GET_READINGS_CODE           "get_readings"
-#define GET_READINGS_RAW_CODE       "get_readings_raw"
-
-// FUSB302 codes
-#define FUSB302_DUMP_DATA           "dump_usb"
-#define FUSB302_GET_IDENTITY        "get_identity"
-#define FUSB302_GET_CAPABILITY      "get_capability"
-
-// display codes
-#define BACKLIGHT_CODE              "backlight:"
-
-// general peripheral codes
-#define TEST_CODE                   "test"
-
 
 
 /***
@@ -116,6 +79,7 @@
 #define FUSB302_ADDRESS     0x22
 #define INA219_ADDRESS      0x40
 #define EEPROM_ADDRESS      0x50
+
 
 
 /***
@@ -143,6 +107,7 @@
 #include "INA219.hpp"
 #include "Memory.hpp"
 #include "version.h"
+#include "Registers.hpp"
 
 
 
