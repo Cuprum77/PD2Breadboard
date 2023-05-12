@@ -202,6 +202,9 @@ void RegisterHandler(bool all = false)
 			watchdog_reboot(0, SRAM_END, 0);
 			while(1);
 		}
+		if(registers.getProtected(Register_Address::Device_Self_Test))
+		{
+		}
 	}
 	else
 	{

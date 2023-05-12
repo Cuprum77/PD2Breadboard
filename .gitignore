@@ -30,8 +30,8 @@ Hardware/Rev 1/USB-PD-backups/
 Hardware/Rev 2/USB-PD-backups/
 
 # VSCode
-Software/.vscode/
-Software/build/
+Software/Embedded/.vscode/
+Software/Embedded/build/
 .vscode/
 *.uf2
 
