@@ -38,11 +38,13 @@ So why settle for a limited, fixed power supply when you can have the ultimate U
 The hardware folder contains all the hardware files for the project. This includes the schematic, PCB layout, and the BOM.
 ### [Resources](Resources/)
 The resources folder contains all the resources for the project. This includes the datasheets, the user manuals, and the application notes. As well as images and other files that are used in the documentation.
-### [Software](Software/)
-The software folder contains all the software files for the project. This includes the source code, the libraries, and the relevant documentation.
+### [Software/Embedded](Software/Embedded/)
+The Folder contains all the software files for the microcontroller. This includes the source code, the libraries, and the relevant documentation.
+### [Software/PC](Software/PC/)
+The folder contains all the software files for the PC control program. This includes the source code, the libraries, and the relevant documentation.
 
 ## License
 ### Hardware
-This hardware is licensed under the CERN Open Hardware Licence v2 - see the [LICENSE](Hardware/LICENSE) file for details
+This hardware is licensed under the CERN Open Hardware Licence v2 - see the [LICENSE](Hardware/Rev 1/LICENSE) file for details
 ### Software
-This software is licensed under the MIT License - see the [LICENSE](Software/LICENSE) file for details
+This software is licensed under the MIT License - see the [LICENSE](Software/Embedded/LICENSE) file for details
