@@ -45,6 +45,6 @@ The folder contains all the software files for the PC control program. This incl
 
 ## License
 ### Hardware
-This hardware is licensed under the CERN Open Hardware Licence v2 - see the [LICENSE](Hardware/Rev 1/LICENSE) file for details
+This hardware is licensed under the CERN Open Hardware Licence v2 - see the [LICENSE](Hardware/Rev%201/LICENSE) file for details
 ### Software
 This software is licensed under the MIT License - see the [LICENSE](Software/Embedded/LICENSE) file for details
