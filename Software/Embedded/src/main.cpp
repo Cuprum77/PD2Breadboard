@@ -6,10 +6,6 @@ unsigned int voltageNegotiated = Device_Target_Voltage_Default;
 unsigned int currentLimit = PFuse_Trip_Current_Default;
 unsigned int backlightBrightness = Display_Brightness_Default;
 
-// store the runtimes of the cores
-unsigned long core0RunTime = 0;
-unsigned long core1RunTime = 0;
-
 // overcurrent boolean
 bool overcurrent = false;
 bool outputEnabled = false;
@@ -43,7 +39,7 @@ Display_Params displayParams = {
 Button buttonUp(BUTTON_UP);
 Button buttonMenu(BUTTON_MENU);
 Button buttonDown(BUTTON_DOWN);
-Display display(spi0, displayPins, displayParams, true);
+Display display(spi0, displayPins, displayParams, display_type_t::ST7789, true);
 Memory memory(EEPROM_ADDRESS, i2c0);
 USB_PD usbPD(FUSB302_ADDRESS, i2c1, PD_INT_N);
 INA219 ina219(INA219_ADDRESS, i2c0);
@@ -378,76 +374,29 @@ void core1Main()
 	//display.drawBitmap(Point(), BACKGROUND_PIXEL_DATA, BACKGROUND_WIDTH, BACKGROUND_HEIGHT);
 	
 	Point start = Point(0, 5);
-	Point typePoint = Point(0, 0);
 
 	unsigned long lastUpdate = 0;
 	while(1)
 	{
-		unsigned long core1Time = time_us_32();
 		display.setCursor(start);
-		display.write(ina219.getCurrent() / 1000, 2);
-		display.write("/");
-		display.write((float)currentLimit / 1000);
-		display.print("A");
-		display.write(ina219.getVoltage(), 2);
-		display.write("/");
-		display.write((float)voltageNegotiated / 1000);
-		display.print("V");
-		display.write(ina219.getPower() / 1000, 2);
-		display.print("W\n");
-
-		core1RunTime = time_us_32() - core1Time;
-		display.write("C0:");
-		double hz = 1/((float)core0RunTime * 0.000001)/1000;
-		display.write(hz, 2);
-		display.print("kHz");
-		display.write("C1:");
-		hz = 1/((float)core1RunTime * 0.000001);
-		display.write(hz, 2);
-		display.print("Hz");
-		display.write("\n#: ");
-		display.print(GIT_COMMIT_HASH);
-		display.write("\nV_CAP: ");
-		
-		auto voltages = usbPD.supportedVoltages();
-		if(voltages & USB_PD_VOLTAGE_5V)
-		{
-			display.write("5V");
-			if(voltages == 0x1)
-				display.write("?");
-			else
-				display.print();
-		}
-		else
-			display.print();
-		typePoint = display.getCursor();
-
-		if(voltages & USB_PD_VOLTAGE_9V)
-			display.write("9V ");
-		else 
-			display.write("	");
-		if(voltages & USB_PD_VOLTAGE_12V)
-			display.print("12V ");
-		else 
-			display.print();
-		if(voltages & USB_PD_VOLTAGE_15V)
-			display.write("15V ");
-		else 
-			display.write("	");
-		if(voltages & USB_PD_VOLTAGE_20V)
-			display.print("20V ");
-		else
-			display.print();
+		display.print(ina219.getCurrent() / 1000, 2, 2);
+		display.print("/", 2);
+		display.print((float)currentLimit / 1000, 2, 2);
+		display.println("A", 2);
+		display.print(ina219.getVoltage(), 2, 2);
+		display.print("/", 2);
+		display.print((float)voltageNegotiated / 1000, 2, 2);
+		display.println("V", 2);
+		display.print(ina219.getPower() / 1000, 2, 2);
+		display.println("W\n", 2);
 		
 
 		// redo the background every 1 seconds
-		if((time_us_32() - lastUpdate) > 1000000)
+		/*if((time_us_32() - lastUpdate) > 1000000)
 		{
 			display.fill(Colors::RaspberryRed);
-			display.setCursor(typePoint);
-			display.print(usbPD.typeToString((FUSB302_MessageType)usbPD.getConnection()));
 			lastUpdate = time_us_32();
-		}
+		}*/
 	}
 }
 
@@ -497,7 +446,6 @@ int main()
 	// run the main loop
 	while(1)
 	{
-		unsigned long core0Time = time_us_32();
 		usbPD.update();
 		ina219.getData();	
 		processUSBData();
@@ -515,7 +463,5 @@ int main()
 			overcurrent = true;
 		else if (ina219.getCurrent() < (float)currentLimit * 0.8)
 			overcurrent = false;
-
-		core0RunTime = time_us_32() - core0Time;
 	}
 }
