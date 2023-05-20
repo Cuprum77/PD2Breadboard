@@ -52,10 +52,10 @@
 // Display constants
 #define DISP_WIDTH          172     // 172 pixels wide
 #define DISP_HEIGHT         320     // 320 pixels tall
-#define DISP_OFFSET_X0      0      // cut off on the left side of the display
-#define DISP_OFFSET_X1      0      // cut off on the right side of the display
-#define DISP_OFFSET_Y0      34       // cut off on the top of the display
-#define DISP_OFFSET_Y1      34       // ut off on the bottom of the display
+#define DISP_OFFSET_X0      0       // cut off on the left side of the display
+#define DISP_OFFSET_X1      0       // cut off on the right side of the display
+#define DISP_OFFSET_Y0      34      // cut off on the top of the display
+#define DISP_OFFSET_Y1      34      // ut off on the bottom of the display
 #define DISP_ROTATION       3       // 0, 1, 2, or 3
 
 // I2C constants

@@ -388,8 +388,7 @@ void core1Main()
 		display.print((float)voltageNegotiated / 1000, 2, 2);
 		display.println("V", 2);
 		display.print(ina219.getPower() / 1000, 2, 2);
-		display.println("W\n", 2);
-		
+		display.println("W\n", 2);		
 
 		// redo the background every 1 seconds
 		/*if((time_us_32() - lastUpdate) > 1000000)
