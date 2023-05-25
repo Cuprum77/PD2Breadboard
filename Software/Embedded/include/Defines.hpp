@@ -17,7 +17,7 @@
 // I2C bus that the FUSB302 is connected to
 #define I2C1_SDA            2
 #define I2C1_SCL            3
-#define PD_INT_N            4
+#define PIN_FUSB302_INT     4
 
 // Display pins
 #define DISP_PIN_DC         16
@@ -103,11 +103,11 @@
 
 #include "Button.hpp"
 #include "Display.hpp"
-#include "USB_PD.hpp"
 #include "INA219.hpp"
 #include "Memory.hpp"
 #include "version.h"
 #include "Registers.hpp"
+#include "PD_UFP.h"
 
 
 
@@ -128,4 +128,4 @@ bi_decl(bi_program_url("https://github.com/Cuprum77/PD2Breadboard"));
 bi_decl(bi_4pins_with_names(DISP_PIN_CS, "SPI Chip Select", DISP_PIN_SCK, "SPI Clock", DISP_PIN_MOSI, "SPI Data", DISP_PIN_RST, "SPI Reset"));
 bi_decl(bi_2pins_with_names(DISP_PIN_DC, "SPI Data Control", DISP_PIN_BL, "Display Backlight"));
 bi_decl(bi_3pins_with_names(BUTTON_UP, "Button Up", BUTTON_MENU, "Button Menu", BUTTON_DOWN, "Button Down"));
-bi_decl(bi_1pin_with_name(PD_INT_N, "USB-PD Interrupt"));
+bi_decl(bi_1pin_with_name(PIN_FUSB302_INT, "USB-PD Interrupt"));

@@ -41,9 +41,9 @@ Button buttonMenu(BUTTON_MENU);
 Button buttonDown(BUTTON_DOWN);
 Display display(spi0, displayPins, displayParams, display_type_t::ST7789, true);
 Memory memory(EEPROM_ADDRESS, i2c0);
-USB_PD usbPD(FUSB302_ADDRESS, i2c1, PD_INT_N);
 INA219 ina219(INA219_ADDRESS, i2c0);
 Registers registers;
+class PD_UFP_log_c PD_UFP(PD_LOG_LEVEL_VERBOSE);
 
 /**
  * @brief Initialize the I2C busses
@@ -370,30 +370,60 @@ void core1Main()
 		multicore_fifo_push_blocking(MULTICORE_FLAG_VALUE);
 	}
 
-	display.fill(Colors::RaspberryRed);
+	//display.fill(Colors::RaspberryRed);
+	//display.fillGradient(Colors::Derg, Colors::RaspberryRed, Point(0,0), Point(DISP_HEIGHT, DISP_WIDTH));
+	display.fillGradient(Colors::White, Colors::Black, Point(0,0), Point(display.getWidth(), display.getHeight()));
 	//display.drawBitmap(Point(), BACKGROUND_PIXEL_DATA, BACKGROUND_WIDTH, BACKGROUND_HEIGHT);
 	
 	Point start = Point(0, 5);
 
 	unsigned long lastUpdate = 0;
+	unsigned long updatePower = 0;
+	bool flip = false;
 	while(1)
 	{
-		display.setCursor(start);
-		display.print(ina219.getCurrent() / 1000, 2, 2);
-		display.print("/", 2);
-		display.print((float)currentLimit / 1000, 2, 2);
-		display.println("A", 2);
-		display.print(ina219.getVoltage(), 2, 2);
-		display.print("/", 2);
-		display.print((float)voltageNegotiated / 1000, 2, 2);
-		display.println("V", 2);
-		display.print(ina219.getPower() / 1000, 2, 2);
-		display.println("W\n", 2);		
-
-		// redo the background every 1 seconds
-		/*if((time_us_32() - lastUpdate) > 1000000)
+		/*if((time_us_32() - lastUpdate) > 2000000)
 		{
-			display.fill(Colors::RaspberryRed);
+			display.fillGradient(Colors::Derg, Colors::RaspberryRed, Point(0,0), Point(0U, display.getHeight()));
+			display.setCursor(start);
+
+			display.print(ina219.getCurrent() / 1000, 2, 2);
+			display.println("A", 2);
+			display.print(ina219.getVoltage(), 2, 2);
+			display.println("V", 2);
+			display.print(ina219.getPower() / 1000, 2, 2);
+			display.println("W\n", 2);
+
+			updatePower = time_us_32();
+		}*/
+
+		/*if((time_us_32() - lastUpdate) > 2000000)
+		{
+			if(flip)
+			{
+				display.clear();
+				display.fillGradientCool(Colors::Derg, Colors::Piss, Point(0,0), Point(display.getWidth(), display.getHeight()));
+			}
+			else
+			{
+				display.fillGradient(Colors::Derg, Colors::Piss, Point(0,0), Point(display.getWidth(), display.getHeight()));
+			}
+
+			flip = !flip;
+			lastUpdate = time_us_32();
+		}*/
+
+		/*if((time_us_32() - lastUpdate) > 4000000)
+		{
+			display.fill(Colors::Black);
+			display.setCursor(start);
+
+			char buf[1024];
+			while (PD_UFP.status_log_readline(buf, sizeof(buf) - 1)) {
+				display.print(buf);
+			}
+
+			updatePower = time_us_32();
 			lastUpdate = time_us_32();
 		}*/
 	}
@@ -422,7 +452,7 @@ int main()
 	ina219.setData();
 	ina219.getData(true);
 
-	usbPD.init();
+	PD_UFP.init_PPS(PPS_V(4.2), PPS_A(6.9));
 
 	// setup the second core
 	multicore_launch_core1(core1Main);
@@ -445,12 +475,12 @@ int main()
 	// run the main loop
 	while(1)
 	{
-		usbPD.update();
 		ina219.getData();	
 		processUSBData();
 		RegisterHandler();
 		buttonHandler();
 		//overCurrentLEDs();
+		PD_UFP.run();
 
 		// transfer the data from the INA219 to the registers for external access
 		registers.setProtected(Register_Address::Bus_Voltage, ina219.getBusVoltageRaw());

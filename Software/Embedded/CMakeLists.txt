@@ -111,7 +111,6 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 
 add_subdirectory(${CMAKE_SOURCE_DIR}/lib/Button)
 add_subdirectory(${CMAKE_SOURCE_DIR}/lib/PicoGFX)
-add_subdirectory(${CMAKE_SOURCE_DIR}/lib/FUSB302)
 add_subdirectory(${CMAKE_SOURCE_DIR}/lib/USB_PD)
 add_subdirectory(${CMAKE_SOURCE_DIR}/lib/INA219)
 add_subdirectory(${CMAKE_SOURCE_DIR}/lib/Memory)
@@ -119,7 +118,6 @@ add_subdirectory(${CMAKE_SOURCE_DIR}/lib/Registers)
 
 link_directories(${CMAKE_SOURCE_DIR}/lib/Button)
 link_directories(${CMAKE_SOURCE_DIR}/lib/PicoGFX)
-link_directories(${CMAKE_SOURCE_DIR}/lib/FUSB302)
 link_directories(${CMAKE_SOURCE_DIR}/lib/USB_PD)
 link_directories(${CMAKE_SOURCE_DIR}/lib/INA219)
 link_directories(${CMAKE_SOURCE_DIR}/lib/Memory)

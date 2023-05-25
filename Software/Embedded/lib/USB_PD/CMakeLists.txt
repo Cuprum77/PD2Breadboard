@@ -6,7 +6,10 @@ project(USB_PD)
 
 # Add the library with the above sources
 add_library(${PROJECT_NAME} 
-    src/USB_PD.cpp)
+    src/FUSB302_UFP.c
+    src/PD_UFP_Protocol.c
+    src/PD_UFP.cpp    
+    )
 add_library(sub::USB_PD ALIAS ${PROJECT_NAME})
 
 target_include_directories(${PROJECT_NAME}
@@ -15,5 +18,5 @@ target_include_directories(${PROJECT_NAME}
 
 target_link_libraries(${PROJECT_NAME} 
     pico_stdlib
-    FUSB302
+    hardware_i2c
 )
