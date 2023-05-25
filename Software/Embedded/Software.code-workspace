@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"*.latex": "latex",
+			"type_traits": "cpp"
+		}
+	}
+}
