@@ -369,63 +369,49 @@ void core1Main()
 		// tell the second core that we are ready
 		multicore_fifo_push_blocking(MULTICORE_FLAG_VALUE);
 	}
-
-	//display.fill(Colors::RaspberryRed);
-	//display.fillGradient(Colors::Derg, Colors::RaspberryRed, Point(0,0), Point(DISP_HEIGHT, DISP_WIDTH));
-	display.fillGradient(Colors::White, Colors::Black, Point(0,0), Point(display.getWidth(), display.getHeight()));
-	//display.drawBitmap(Point(), BACKGROUND_PIXEL_DATA, BACKGROUND_WIDTH, BACKGROUND_HEIGHT);
 	
-	Point start = Point(0, 5);
+	int radius = 200;
+	double theta = 0;
+	double rotationSpeed = 0.05;
 
-	unsigned long lastUpdate = 0;
-	unsigned long updatePower = 0;
-	bool flip = false;
+	Point cursor = Point(0, 5);
+	Point center = display.getCenter();
+	Point start = Point(
+		(int)(center.x - radius * cos(theta)), 
+		(int)(center.y - radius * sin(theta))
+	);
+	Point end = Point(
+		(int)(center.x + radius * cos(theta)), 
+		(int)(center.y + radius * sin(theta))
+	);
+
 	while(1)
 	{
-		/*if((time_us_32() - lastUpdate) > 2000000)
-		{
-			display.fillGradient(Colors::Derg, Colors::RaspberryRed, Point(0,0), Point(0U, display.getHeight()));
-			display.setCursor(start);
+		unsigned long core1Time = time_us_32();
+		display.fillGradient(Colors::DarkYellow, Colors::OrangeRed, start, end);
+		display.setCursor(cursor);
+		display.print(ina219.getCurrent() / 1000, 2, 2);
+		display.println("A", 2);
+		display.print(ina219.getVoltage(), 2, 2);
+		display.println("V", 2);
+		display.print(ina219.getPower() / 1000, 2, 2);
+		display.println("W\n", 2);
+		unsigned long core1RunTime = time_us_32() - core1Time;
+		double hz = 1000000.0 / core1RunTime;
+		display.setCursor({FONT_WIDTH * 14, 5});
+		Color color = Colors::Black;
+		display.print(hz, color.hexToColor(0x39ff14), 2, 1);
+		display.writeBuffer();
 
-			display.print(ina219.getCurrent() / 1000, 2, 2);
-			display.println("A", 2);
-			display.print(ina219.getVoltage(), 2, 2);
-			display.println("V", 2);
-			display.print(ina219.getPower() / 1000, 2, 2);
-			display.println("W\n", 2);
-
-			updatePower = time_us_32();
-		}*/
-
-		/*if((time_us_32() - lastUpdate) > 2000000)
-		{
-			if(flip)
-			{
-				display.clear();
-				display.fillGradientCool(Colors::Derg, Colors::Piss, Point(0,0), Point(display.getWidth(), display.getHeight()));
-			}
-			else
-			{
-				display.fillGradient(Colors::Derg, Colors::Piss, Point(0,0), Point(display.getWidth(), display.getHeight()));
-			}
-
-			flip = !flip;
-			lastUpdate = time_us_32();
-		}*/
-
-		/*if((time_us_32() - lastUpdate) > 4000000)
-		{
-			display.fill(Colors::Black);
-			display.setCursor(start);
-
-			char buf[1024];
-			while (PD_UFP.status_log_readline(buf, sizeof(buf) - 1)) {
-				display.print(buf);
-			}
-
-			updatePower = time_us_32();
-			lastUpdate = time_us_32();
-		}*/
+		theta += rotationSpeed;
+		start = Point(
+			(int)(center.x - radius * cos(theta)), 
+			(int)(center.y - radius * sin(theta))
+		);
+		end = Point(
+			(int)(center.x + radius * cos(theta)), 
+			(int)(center.y + radius * sin(theta))
+		);
 	}
 }
 
