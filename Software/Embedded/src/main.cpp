@@ -10,6 +10,18 @@ unsigned int backlightBrightness = Display_Brightness_Default;
 bool overcurrent = false;
 bool outputEnabled = false;
 
+// pps variables
+bool ppsReady = false;
+float maxCurrent = 0;
+float maxVoltage = 0;
+PD_power_option_t PDList[] = {
+	PD_POWER_OPTION_MAX_5V, 
+	PD_POWER_OPTION_MAX_9V, 
+	PD_POWER_OPTION_MAX_12V, 
+	PD_POWER_OPTION_MAX_15V, 
+	PD_POWER_OPTION_MAX_20V
+};
+
 // set the display parameters
 // the ifdefs are used to prevent the intellisense from complaining about the variables not being defined
 Display_Pins displayPins = {
@@ -300,10 +312,6 @@ void processUSBData()
 */
 void buttonHandler()
 {
-	if(buttonMenu.isLongPressed())
-	{
-		printf("MENU long pressed\n");
-	}
 	if(buttonMenu.isHeld())
 	{
 		static bool state = false;
@@ -313,33 +321,6 @@ void buttonHandler()
 		gpio_put(LEFT_MOSFET_LED, state);
 		gpio_put(RIGHT_MOSFET_LED, state);
 		printf("MENU held\n");
-	}
-	if(buttonMenu.isClicked())
-	{
-		printf("MENU\n");
-	}
-	if(buttonDown.isLongPressed())
-	{
-		printf("DOWN long pressed\n");
-		display.clear();
-	}
-	if(buttonDown.isHeld())
-	{
-		printf("DOWN held\n");		
-	}
-	if(buttonDown.isClicked())
-	{
-		currentLimit -= 50; 
-		printf("DOWN\n");
-	}
-	if(buttonUp.isHeld())
-	{
-		printf("UP held\n");
-	}
-	if(buttonUp.isClicked())
-	{
-		currentLimit += 50;
-		printf("UP\n");
 	}
 
 	buttonUp.update();
@@ -360,21 +341,19 @@ void core1Main()
 
 	// check if the second core is ready
 	if(g != MULTICORE_FLAG_VALUE)
-	{
 		// Enter an infinite loop if the first core is not ready
 		Error();
-	}
 	else
-	{
 		// tell the second core that we are ready
 		multicore_fifo_push_blocking(MULTICORE_FLAG_VALUE);
-	}
 	
-	int radius = 200;
-	double theta = 0;
-	double rotationSpeed = 0.05;
+	// gradient rotation variables
+	int radius = 200;	// radius of the gradient (should be larger than the screen to avoid artifacts)
+	double theta = 0;	// angle in radians
+	double rotationSpeed = 0.05;	// speed in radians per frame
 
-	Point cursor = Point(0, 5);
+	// create points for important locations
+	Point cursor = Point(0, 10);
 	Point center = display.getCenter();
 	Point start = Point(
 		(int)(center.x - radius * cos(theta)), 
@@ -387,22 +366,41 @@ void core1Main()
 
 	while(1)
 	{
-		unsigned long core1Time = time_us_32();
-		display.fillGradient(Colors::DarkYellow, Colors::OrangeRed, start, end);
+		// draw the background
+		display.fillGradient(Colors::Derg, Colors::Pink, start, end);
 		display.setCursor(cursor);
-		display.print(ina219.getCurrent() / 1000, 2, 2);
-		display.println("A", 2);
-		display.print(ina219.getVoltage(), 2, 2);
+
+		// draw the current
+		double current = ina219.getCurrent() / 1000;
+		if(current > 10)
+			display.print(current, 1, 2);
+		else
+			display.print(current, 2, 2);
+		display.print("A", 2);
+		display.print(" ", 2);
+		display.print((bool)ppsReady);
+		display.println(" ", 2);
+
+		// draw the voltage
+		double voltage = ina219.getVoltage();
+		if(voltage > 10)
+			display.print(voltage, 1, 2);
+		else
+			display.print(voltage, 2, 2);
 		display.println("V", 2);
-		display.print(ina219.getPower() / 1000, 2, 2);
+
+		// draw the power
+		double power = ina219.getPower() / 1000;
+		if(power > 10)
+			display.print(power, 1, 2);
+		else
+			display.print(power, 2, 2);
 		display.println("W\n", 2);
-		unsigned long core1RunTime = time_us_32() - core1Time;
-		double hz = 1000000.0 / core1RunTime;
-		display.setCursor({FONT_WIDTH * 14, 5});
-		Color color = Colors::Black;
-		display.print(hz, color.hexToColor(0x39ff14), 2, 1);
+
+		// output the data to the display
 		display.writeBuffer();
 
+		// rotate the gradient
 		theta += rotationSpeed;
 		start = Point(
 			(int)(center.x - radius * cos(theta)), 
@@ -415,6 +413,147 @@ void core1Main()
 	}
 }
 
+float toVolt(int volt, bool pps = false);
+float toAmp(int amp, bool pps = false);
+
+void prepPSU()
+{
+	PD_UFP.init_PPS(PPS_V(5.0), PPS_A(1.0), PD_POWER_OPTION_MAX_5V);
+
+	unsigned long time = time_us_32();
+	while(time_us_32() - time < 1000)
+	{
+		PD_UFP.run();
+		if(PD_UFP.is_PPS_ready())
+		{
+			ppsReady = true;
+			break;
+		}
+	}
+
+	if(ppsReady)
+	{
+		// check current
+		for(int i = 0; i < PPS_A(5.0); i += PPS_A(0.05))
+		{
+			if(PD_UFP.set_PPS(PPS_V(5.0), i))
+			{
+				while(PD_UFP.is_ps_transition())
+					PD_UFP.run();
+				
+				if(PD_UFP.is_PPS_ready())
+					maxCurrent = toAmp(PD_UFP.get_current(), ppsReady);
+			}
+		}
+
+		// check voltage
+		for(int i = PPS_V(3.3); i <= PPS_V(21.0); i += PPS_V(1.0))
+		{
+			if(PD_UFP.set_PPS(i, PPS_A(maxCurrent)))
+			{
+				while(PD_UFP.is_ps_transition())
+					PD_UFP.run();
+				
+				if(PD_UFP.is_PPS_ready())
+					maxVoltage = toVolt(PD_UFP.get_voltage(), ppsReady);
+			}
+		}
+	}
+	else
+	{
+		// check voltage
+		PD_UFP.set_power_option(PD_POWER_OPTION_MAX_VOLTAGE);
+		while(PD_UFP.is_ps_transition())
+			PD_UFP.run();
+
+		maxVoltage = toVolt(PD_UFP.get_voltage(), ppsReady);
+
+		// check current
+		PD_UFP.set_power_option(PD_POWER_OPTION_MAX_CURRENT);
+		while(PD_UFP.is_ps_transition())
+			PD_UFP.run();
+
+		maxCurrent = toAmp(PD_UFP.get_current(), ppsReady);
+	}
+}
+
+// convert the voltage to the correct values
+float toVolt(int volt, bool pps)
+{
+	float result = 0.0;
+
+	if(pps)
+	{
+		result = (volt - 0.01) / 50.0;
+		result = result < 0 ? 0.0 : result;
+	}
+	else
+	{
+		result = (volt - 0.01) / 20.0;
+		result = result < 0 ? 0.0 : result;
+	}
+	
+	return result;
+}
+
+// convert the current to the correct values
+float toAmp(int amp, bool pps)
+{
+	float result = 0.0;
+
+	if(pps)
+	{
+		result = (amp - 0.01) / 20.0;
+		result = result < 0 ? 0.0 : result;
+	}
+	else
+	{
+		result = (amp - 0.01) / 100.0;
+		result = result < 0 ? 0.0 : result;
+	}
+
+	return result;
+}
+
+void request(int* volt, int* current, bool pps)
+{
+	// if the PPS is ready, request the voltage and current
+	if(pps)
+	{
+		if(*volt <= PPS_V(maxVoltage) && *current <= PPS_A(maxCurrent))
+		{
+			if(*volt < PPS_V(3.3))
+				*volt = PPS_V(3.3);
+			if(*current < PPS_A(0.01))
+				*current = PPS_A(0.01);
+
+			PD_UFP.set_PPS(*volt, *current);
+
+			while(PD_UFP.is_ps_transition())
+				PD_UFP.run();
+		}
+	}
+	else
+	{
+		// as we dont have PPS, the voltage is fixed to either 5, 9, 12, 15 or 20 volts and we need to find which one is the closest to the requested voltage
+		if(*volt <= 5)
+			*volt = 5;
+		else if(*volt <= 9)
+			*volt = 9;
+		else if(*volt <= 12)
+			*volt = 12;
+		else if(*volt <= 15)
+			*volt = 15;
+		else
+			*volt = 20;
+
+		PD_power_option_t option = PDList[(int)((*volt - 5) / 3)];
+		PD_UFP.set_power_option(option);
+
+		while(PD_UFP.is_ps_transition())
+			PD_UFP.run();
+	}
+}
 
 /**
  * @brief Main function
@@ -422,12 +561,14 @@ void core1Main()
 */
 int main()
 {
+	// setup the microcontroller
 	stdio_init_all();
 	initI2C();
 	initLEDs();
 	fetchDataFromEEPROM();
-	ina219.reset();
 
+	// setup the ina219 current sensor
+	ina219.reset();
 	ina219.getData(true);
 	ina219.setCalibration();
 	ina219.setBusVoltageRange(INA219_BUS_VOLTAGE_RANGE_32V);
@@ -438,7 +579,12 @@ int main()
 	ina219.setData();
 	ina219.getData(true);
 
-	PD_UFP.init_PPS(PPS_V(4.2), PPS_A(6.9));
+	//PD_UFP.init_PPS(PPS_V(4.2), PPS_A(6.9));
+	PD_UFP.clock_prescale_set(2);
+	prepPSU();
+	int volt = 20;
+	int current = 1;
+	request(&volt, &current, ppsReady);
 
 	// setup the second core
 	multicore_launch_core1(core1Main);
@@ -448,15 +594,11 @@ int main()
 
 	// check if the second core is ready
 	if(g != MULTICORE_FLAG_VALUE)
-	{
 		// Enter an infinite loop if the second core is not ready
 		Error();
-	}
 	else
-	{
 		// tell the second core that we are ready
 		multicore_fifo_push_blocking(MULTICORE_FLAG_VALUE);
-	}
 
 	// run the main loop
 	while(1)
@@ -465,7 +607,7 @@ int main()
 		processUSBData();
 		RegisterHandler();
 		buttonHandler();
-		//overCurrentLEDs();
+		request(&volt, &current, ppsReady);
 		PD_UFP.run();
 
 		// transfer the data from the INA219 to the registers for external access

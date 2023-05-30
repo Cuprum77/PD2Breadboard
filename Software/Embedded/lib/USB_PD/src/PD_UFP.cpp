@@ -135,12 +135,10 @@ void PD_UFP_core_c::clock_prescale_set(uint8_t prescaler)
 
 FUSB302_ret_t PD_UFP_core_c::FUSB302_i2c_read(uint8_t dev_addr, uint8_t reg_addr, uint8_t *data, uint8_t count)
 {
-    uint y = 0;
+    i2c_write_blocking(I2C_PORT, dev_addr, &reg_addr, 1, true);
+    uint y = i2c_read_blocking(I2C_PORT, dev_addr, data, count, false);
 
-    y += i2c_write_blocking(I2C_PORT, dev_addr, &reg_addr, 1, true);
-    y += i2c_read_blocking(I2C_PORT, dev_addr, data, count, false);
-
-    return y == 0 ? FUSB302_ERR_READ_DEVICE : FUSB302_SUCCESS;
+    return y == count ? FUSB302_SUCCESS : FUSB302_ERR_READ_DEVICE;
 }
 
 FUSB302_ret_t PD_UFP_core_c::FUSB302_i2c_write(uint8_t dev_addr, uint8_t reg_addr, uint8_t *data, uint8_t count)
@@ -247,7 +245,7 @@ void PD_UFP_core_c::handle_FUSB302_event(FUSB302_event_t events)
 
 bool PD_UFP_core_c::timer(void)
 {
-    uint16_t t = clock_ms();
+    uint32_t t = clock_ms();
     if (wait_src_cap && t - time_wait_src_cap > t_TypeCSinkWaitCap) {
         time_wait_src_cap = t;
         if (get_src_cap_retry_count < 3) {
@@ -308,9 +306,9 @@ void PD_UFP_core_c::delay_ms(uint16_t ms)
     sleep_ms(ms / clock_prescaler);
 }
 
-uint16_t PD_UFP_core_c::clock_ms(void)
+uint32_t PD_UFP_core_c::clock_ms(void)
 {
-    return (uint16_t)time_us_32() / 1000 * clock_prescaler;
+    return time_us_32() / 1000 * clock_prescaler;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////

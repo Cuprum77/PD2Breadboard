@@ -114,7 +114,7 @@ class PD_UFP_core_c
         static uint8_t clock_prescaler;
         // Time functions        
         void delay_ms(uint16_t ms);
-        uint16_t clock_ms(void);
+        uint32_t clock_ms(void);
         // Status logging
         virtual void status_log_event(uint8_t status, uint32_t * obj = 0) {}
 };
