@@ -102,7 +102,7 @@
 #include "tusb.h"
 
 #include "Button.hpp"
-#include "Display.hpp"
+#include "AdvancedGraphics.hpp"
 #include "INA219.hpp"
 #include "Memory.hpp"
 #include "version.h"

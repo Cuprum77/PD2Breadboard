@@ -51,7 +51,7 @@ Display_Params displayParams = {
 Button buttonUp(BUTTON_UP);
 Button buttonMenu(BUTTON_MENU);
 Button buttonDown(BUTTON_DOWN);
-Display display(spi0, displayPins, displayParams, display_type_t::ST7789, true);
+AdvancedGraphics display(spi0, displayPins, displayParams, display_type_t::ST7789, true);
 Memory memory(EEPROM_ADDRESS, i2c0);
 INA219 ina219(INA219_ADDRESS, i2c0);
 Registers registers;
@@ -347,27 +347,23 @@ void core1Main()
 		// tell the second core that we are ready
 		multicore_fifo_push_blocking(MULTICORE_FLAG_VALUE);
 	
-	// gradient rotation variables
-	int radius = 200;	// radius of the gradient (should be larger than the screen to avoid artifacts)
-	double theta = 0;	// angle in radians
-	double rotationSpeed = 0.05;	// speed in radians per frame
-
 	// create points for important locations
 	Point cursor = Point(0, 10);
 	Point center = display.getCenter();
-	Point start = Point(
-		(int)(center.x - radius * cos(theta)), 
-		(int)(center.y - radius * sin(theta))
-	);
-	Point end = Point(
-		(int)(center.x + radius * cos(theta)), 
-		(int)(center.y + radius * sin(theta))
-	);
+
+	// timer for avoiding too fast screen updates
+	unsigned long lastUpdate = 0;
+	// should be updated every 10fps
+	unsigned long updateInterval = 100000;
+	unsigned long timer = 0, lastTimer = 0;
+	double framerate = 0;
 
 	while(1)
 	{
+		lastTimer = time_us_32();
 		// draw the background
-		display.fillGradient(Colors::Derg, Colors::Pink, start, end);
+		//display.drawRotCircleGradient(center, 200, 50, Colors::Derg, Colors::Pink);
+		display.drawRotEllipseGradient(center, 175, 100, 50, Colors::OrangeRed, Colors::DarkYellow);
 		display.setCursor(cursor);
 
 		// draw the current
@@ -378,7 +374,7 @@ void core1Main()
 			display.print(current, 2, 2);
 		display.print("A", 2);
 		display.print(" ", 2);
-		display.print((bool)ppsReady);
+		display.print(framerate, Colors::GreenYellow, 2, 1);
 		display.println(" ", 2);
 
 		// draw the voltage
@@ -400,16 +396,10 @@ void core1Main()
 		// output the data to the display
 		display.writeBuffer();
 
-		// rotate the gradient
-		theta += rotationSpeed;
-		start = Point(
-			(int)(center.x - radius * cos(theta)), 
-			(int)(center.y - radius * sin(theta))
-		);
-		end = Point(
-			(int)(center.x + radius * cos(theta)), 
-			(int)(center.y + radius * sin(theta))
-		);
+		// reset the timer
+		lastUpdate = time_us_32();
+		timer = time_us_32() - lastTimer;
+		framerate = 1000000.0 / timer;
 	}
 }
 
