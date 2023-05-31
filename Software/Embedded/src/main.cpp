@@ -362,8 +362,7 @@ void core1Main()
 	{
 		lastTimer = time_us_32();
 		// draw the background
-		//display.drawRotCircleGradient(center, 200, 50, Colors::Derg, Colors::Pink);
-		display.drawRotEllipseGradient(center, 175, 100, 50, Colors::OrangeRed, Colors::DarkYellow);
+		display.drawRotRectGradient(center, display.getWidth(), display.getHeight(), 10, Colors::OrangeRed, Colors::DarkYellow);
 		display.setCursor(cursor);
 
 		// draw the current
@@ -391,7 +390,7 @@ void core1Main()
 			display.print(power, 1, 2);
 		else
 			display.print(power, 2, 2);
-		display.println("W\n", 2);
+		display.print("W\n", 2);
 
 		// output the data to the display
 		display.writeBuffer();
@@ -400,6 +399,7 @@ void core1Main()
 		lastUpdate = time_us_32();
 		timer = time_us_32() - lastTimer;
 		framerate = 1000000.0 / timer;
+		printf("%lu (%.2fhz)\n", timer, framerate);
 	}
 }
 
