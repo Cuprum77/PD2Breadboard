@@ -98,6 +98,10 @@ void initLEDs()
 	gpio_set_dir(LEFT_MOSFET, GPIO_OUT);
 	gpio_set_dir(RIGHT_MOSFET, GPIO_OUT);
 
+	// set mosfet to high to disable the output
+	gpio_put(LEFT_MOSFET, 1);
+	gpio_put(RIGHT_MOSFET, 1);
+
 	// set the binary data to show the pins used for the LEDs
 	bi_decl(bi_4pins_with_names(
 		LEFT_MOSFET_LED, "Left MOSFET LED", 
@@ -105,25 +109,6 @@ void initLEDs()
 		RIGHT_MOSFET_LED, "Right MOSFET LED", 
 		RIGHT_MOSFET, "Right MOSFET")
 	);
-}
-
-/**
- * @brief Error function
- * @note This is a blocking function that blinks the LEDS if an error occurs
-*/
-void Error()
-{
-	unsigned long lastErrorBlink = 0;
-	uint ledErrorValue = 0;
-	while(1)
-	{
-		if((time_us_32() - lastErrorBlink) > 100000)
-		{
-			gpio_put(LEFT_MOSFET_LED, ledErrorValue ^= 1);
-			gpio_put(RIGHT_MOSFET_LED, ledErrorValue ^= 1);
-			lastErrorBlink = time_us_32();
-		}
-	}
 }
 
 /**
@@ -314,10 +299,10 @@ void buttonHandler()
 {
 	if(buttonMenu.isHeld())
 	{
-		static bool state = false;
+		static bool state = true;
 		state = !state;
-		gpio_put(LEFT_MOSFET, state);
-		gpio_put(RIGHT_MOSFET, state);
+		gpio_put(LEFT_MOSFET, !state);
+		gpio_put(RIGHT_MOSFET, !state);
 		gpio_put(LEFT_MOSFET_LED, state);
 		gpio_put(RIGHT_MOSFET_LED, state);
 		printf("MENU held\n");
@@ -326,81 +311,6 @@ void buttonHandler()
 	buttonUp.update();
 	buttonMenu.update();
 	buttonDown.update();
-}
-
-/**
- * @brief Main function
- * @note This runs on the core 1
-*/
-void core1Main()
-{
-	// tell the other core that we are ready
-	multicore_fifo_push_blocking(MULTICORE_FLAG_VALUE);
-	// wait for the other core to be ready
-	uint g = multicore_fifo_pop_blocking();
-
-	// check if the second core is ready
-	if(g != MULTICORE_FLAG_VALUE)
-		// Enter an infinite loop if the first core is not ready
-		Error();
-	else
-		// tell the second core that we are ready
-		multicore_fifo_push_blocking(MULTICORE_FLAG_VALUE);
-	
-	// create points for important locations
-	Point cursor = Point(0, 10);
-	Point center = display.getCenter();
-
-	// timer for avoiding too fast screen updates
-	unsigned long lastUpdate = 0;
-	// should be updated every 10fps
-	unsigned long updateInterval = 100000;
-	unsigned long timer = 0, lastTimer = 0;
-	double framerate = 0;
-
-	while(1)
-	{
-		lastTimer = time_us_32();
-		// draw the background
-		display.drawRotRectGradient(center, display.getWidth(), display.getHeight(), 10, Colors::OrangeRed, Colors::DarkYellow);
-		display.setCursor(cursor);
-
-		// draw the current
-		double current = ina219.getCurrent() / 1000;
-		if(current > 10)
-			display.print(current, 1, 2);
-		else
-			display.print(current, 2, 2);
-		display.print("A", 2);
-		display.print(" ", 2);
-		display.print(framerate, Colors::GreenYellow, 2, 1);
-		display.println(" ", 2);
-
-		// draw the voltage
-		double voltage = ina219.getVoltage();
-		if(voltage > 10)
-			display.print(voltage, 1, 2);
-		else
-			display.print(voltage, 2, 2);
-		display.println("V", 2);
-
-		// draw the power
-		double power = ina219.getPower() / 1000;
-		if(power > 10)
-			display.print(power, 1, 2);
-		else
-			display.print(power, 2, 2);
-		display.print("W\n", 2);
-
-		// output the data to the display
-		display.writeBuffer();
-
-		// reset the timer
-		lastUpdate = time_us_32();
-		timer = time_us_32() - lastTimer;
-		framerate = 1000000.0 / timer;
-		printf("%lu (%.2fhz)\n", timer, framerate);
-	}
 }
 
 float toVolt(int volt, bool pps = false);
@@ -505,7 +415,7 @@ float toAmp(int amp, bool pps)
 	return result;
 }
 
-void request(int* volt, int* current, bool pps)
+void request(float* volt, float* current, bool pps)
 {
 	// if the PPS is ready, request the voltage and current
 	if(pps)
@@ -570,35 +480,35 @@ int main()
 	ina219.getData(true);
 
 	//PD_UFP.init_PPS(PPS_V(4.2), PPS_A(6.9));
-	PD_UFP.clock_prescale_set(2);
 	prepPSU();
-	int volt = 20;
-	int current = 1;
+	float volt = 20;
+	float current = 1;
 	request(&volt, &current, ppsReady);
 
-	// setup the second core
-	multicore_launch_core1(core1Main);
+	// create points for important locations
+	Point cursor = Point(0, 10);
+	Point center = display.getCenter();
 
-	// wait for the second core to be ready
-	uint g = multicore_fifo_pop_blocking();
-
-	// check if the second core is ready
-	if(g != MULTICORE_FLAG_VALUE)
-		// Enter an infinite loop if the second core is not ready
-		Error();
-	else
-		// tell the second core that we are ready
-		multicore_fifo_push_blocking(MULTICORE_FLAG_VALUE);
+	// timer for avoiding too fast screen updates
+	unsigned long lastUpdate = 0;
+	// should be updated every 10fps
+	unsigned long updateInterval = 100000;
+	unsigned long timer = 0, lastTimer = 0;
+	double framerate = 0;
 
 	// run the main loop
 	while(1)
 	{
+		lastTimer = time_us_32();
 		ina219.getData();	
 		processUSBData();
 		RegisterHandler();
 		buttonHandler();
 		request(&volt, &current, ppsReady);
 		PD_UFP.run();
+
+		if(buttonDown.isClicked())
+			PD_UFP.print_status();
 
 		// transfer the data from the INA219 to the registers for external access
 		registers.setProtected(Register_Address::Bus_Voltage, ina219.getBusVoltageRaw());
@@ -610,5 +520,70 @@ int main()
 			overcurrent = true;
 		else if (ina219.getCurrent() < (float)currentLimit * 0.8)
 			overcurrent = false;
+
+		if(!display.writeReady())
+			continue;
+
+		// draw the background
+		display.drawRotRectGradient(center, display.getWidth(), display.getHeight(), 10, Colors::OrangeRed, Colors::DarkYellow);
+		display.setCursor(cursor);
+
+		// draw the current
+		int current = (ina219.getCurrentRaw() * 100) * CURRENT_RESOLUTION;
+		// it overflows if the current is zero for some reason, so we manually set it to zero if that happens
+		current = current > 5000 ? 0 : current;
+		int current_int = current / 100;
+		int current_fraction = current_int > 10 ? (current % 10) : (current % 100);
+		display.print(current_int, 2);
+		display.print(".", 2);
+		// if the current is less than 10, we need to draw a zero
+		if(current_int < 10 && current_fraction != 0)
+			display.print("0", 2);
+		display.print(current_fraction, 2);
+		// draw additional zeros if needed
+		if(current_fraction == 0)
+			display.print("0", 2);
+		display.print("A", 2);
+		display.print(" ", 2);
+		display.print(framerate, Colors::GreenYellow, 2, 1);
+		display.println(" ", 2);
+
+		// draw the voltage
+		int volt = ina219.getBusVoltageRaw() * 100 * BUS_VOLTAGE_LSB_VALUE;
+		int volt_int = volt / 100;
+		int volt_fraction = volt_int > 10 ? (volt % 10) : (volt % 100);
+		display.print(volt_int, 2);
+		display.print(".", 2);
+		// if the current is less than 10, we need to draw a zero
+		if(volt_fraction < 10 && volt_fraction != 0)
+			display.print("0", 2);
+		display.print(volt_fraction, 2);
+		// draw additional zeros if needed
+		if(volt_fraction == 0)
+			display.print("0", 2);
+		display.println("V", 2);
+
+		// draw the power
+		int power = (ina219.getPowerRaw() * 2000) * CURRENT_RESOLUTION;
+		int power_int = power / 100;
+		int power_fraction = power_int > 10 ? (power % 10) : (power % 100);
+		display.print(power_int, 2);
+		display.print(".", 2);
+		// if the current is less than 10, we need to draw a zero
+		if(power_fraction < 10 && power_fraction != 0)
+			display.print("0", 2);
+		display.print(power_fraction, 2);
+		// draw additional zeros if needed
+		if(power_fraction == 0)
+			display.print("0", 2);
+		display.print("W\n", 2);
+
+		// output the data to the display
+		display.writeBuffer();
+
+		// reset the timer
+		lastUpdate = time_us_32();
+		timer = time_us_32() - lastTimer;
+		framerate = 1000000.0 / timer;
 	}
 }

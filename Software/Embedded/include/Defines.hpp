@@ -95,7 +95,6 @@
 #include "pico/stdlib.h"
 #include "pico/bootrom.h"
 #include "pico/binary_info.h"
-#include "pico/multicore.h"
 #include "hardware/uart.h"
 #include "hardware/i2c.h"
 #include "hardware/watchdog.h"
