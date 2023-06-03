@@ -51,7 +51,7 @@ Display_Params displayParams = {
 Button buttonUp(BUTTON_UP);
 Button buttonMenu(BUTTON_MENU);
 Button buttonDown(BUTTON_DOWN);
-AdvancedGraphics display(spi0, displayPins, displayParams, display_type_t::ST7789, true);
+AdvancedGraphics display(spi0, displayPins, displayParams, display_type_t::ST7789, true, SPI_Interface_t::PIO_HW);
 Memory memory(EEPROM_ADDRESS, i2c0);
 INA219 ina219(INA219_ADDRESS, i2c0);
 Registers registers;
@@ -521,11 +521,13 @@ int main()
 		else if (ina219.getCurrent() < (float)currentLimit * 0.8)
 			overcurrent = false;
 
+		// if the screen is not ready, we skip the drawing and continue to poll the sensor
 		if(!display.writeReady())
 			continue;
 
 		// draw the background
 		display.drawRotRectGradient(center, display.getWidth(), display.getHeight(), 10, Colors::OrangeRed, Colors::DarkYellow);
+		//display.fill(Colors::Derg);
 		display.setCursor(cursor);
 
 		// draw the current
