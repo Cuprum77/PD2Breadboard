@@ -762,7 +762,7 @@
     (property "Value" "USB4110-GF-A_REVB" (at 85.09 82.6286 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Footprint" "KiCAD Library:GCT_USB4110-GF-A_REVB" (at 88.9 101.6 0)
+    (property "Footprint" "Connector_USB:USB_C_Receptacle_GCT_USB4105-xx-A_16P_TopMnt_Horizontal" (at 88.9 101.6 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "https://www.usb.org/sites/default/files/documents/usb_type-c.zip" (at 88.9 101.6 0)
