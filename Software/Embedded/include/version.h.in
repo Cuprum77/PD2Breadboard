@@ -1,0 +1,15 @@
+// Thanks to Xit0 for this snippet
+// http://xit0.org/2013/04/cmake-use-git-branch-and-commit-details-in-project/
+
+#ifndef VERSION_H
+#define VERSION_H
+
+#define GIT_BRANCH "@GIT_BRANCH@"
+#define GIT_AUTHOR "@GIT_AUTHOR@"
+#define GIT_COMMIT_HASH "@GIT_COMMIT_HASH@"
+#define GIT_COMMIT_DATE "@GIT_COMMIT_DATE@"
+#define GIT_COMMIT_SUBJECT "@GIT_COMMIT_SUBJECT@"
+#define GIT_COMMIT_BODY "@GIT_COMMIT_BODY@"
+#define GIT_COMMIT_DIRTY "@GIT_COMMIT_DIRTY@"
+
+#endif
