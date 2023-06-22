@@ -368,15 +368,8 @@ void PD_UFP_log_c::status_log_event(uint8_t status, uint32_t * obj)
 }
 
 // Optimize RAM usage on AVR MCU by allocate format string in program memory
-#if defined(__AVR__)
-#include <avr/pgmspace.h>
-#define SNPRINTF snprintf_P
-#else
-#define SNPRINTF snprintf
 #define PSTR(str) str
-#endif
-
-#define LOG(format, ...) do { n = SNPRINTF(buffer, maxlen, PSTR(format), ## __VA_ARGS__); } while (0)
+#define LOG(format, ...) do { n = snprintf(buffer, maxlen, PSTR(format), ## __VA_ARGS__); } while (0)
 
 int PD_UFP_log_c::status_log_readline_msg(char * buffer, int maxlen, status_log_t * log)
 {
@@ -418,12 +411,12 @@ int PD_UFP_log_c::status_log_readline_src_cap(char * buffer, int maxlen)
         char * t = status_log_time;
         uint8_t selected = PD_protocol_get_selected_power(&protocol);
         char min_v[8] = {0}, max_v[8] = {0}, power[8] = {0};
-        if (p.min_v) SNPRINTF(min_v, sizeof(min_v)-1, PSTR("%d.%02dV-"), p.min_v / 20, (p.min_v * 5) % 100);
-        if (p.max_v) SNPRINTF(max_v, sizeof(max_v)-1, PSTR("%d.%02dV"), p.max_v / 20, (p.max_v * 5) % 100);
+        if (p.min_v) snprintf(min_v, sizeof(min_v)-1, PSTR("%d.%02dV-"), p.min_v / 20, (p.min_v * 5) % 100);
+        if (p.max_v) snprintf(max_v, sizeof(max_v)-1, PSTR("%d.%02dV"), p.max_v / 20, (p.max_v * 5) % 100);
         if (p.max_i) {
-            SNPRINTF(power, sizeof(power)-1, PSTR("%d.%02dA"), p.max_i / 100, p.max_i % 100);
+            snprintf(power, sizeof(power)-1, PSTR("%d.%02dA"), p.max_i / 100, p.max_i % 100);
         } else {
-            SNPRINTF(power, sizeof(power)-1, PSTR("%d.%02dW"), p.max_p / 4, p.max_p * 25);
+            snprintf(power, sizeof(power)-1, PSTR("%d.%02dW"), p.max_p / 4, p.max_p * 25);
         }
         LOG("%s   [%d] %s%s %s%s%s\n", t, i, min_v, max_v, power, str_pps[p.type], i == selected ? " *" : "");
         status_log_counter++;
@@ -443,7 +436,7 @@ int PD_UFP_log_c::status_log_readline(char * buffer, int maxlen)
     int n = 0;
     char * t = status_log_time;
     if (t[0] == 0) {    // Convert timestamp number to string
-        SNPRINTF(t, sizeof(status_log_time)-1, PSTR("%04u: "), log->time);
+        snprintf(t, sizeof(status_log_time)-1, PSTR("%04u: "), log->time);
         return 0; 
     }
 

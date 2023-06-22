@@ -41,7 +41,7 @@ int Memory::selfTest()
     {
         // read the current word and store it for rewriting later
         unsigned int original_word = this->readWord(address);
-        // calculate a random word using the us timer and the current address
+        // calculate a "random" word using the us timer and the current address (lmao this is not random at all)
         unsigned int random_word = (unsigned int)time_us_64() + address;
         // write the random word to the eeprom
         this->writeWord(address, random_word);
@@ -56,7 +56,7 @@ int Memory::selfTest()
         // write the original word back to the eeprom
         this->writeWord(address, original_word);
         // increment the address
-        address += 4;
+        address += WORD_SIZE;
     }
 
     // return the error counter

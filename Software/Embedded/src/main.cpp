@@ -55,7 +55,7 @@ AdvancedGraphics display(spi0, displayPins, displayParams, display_type_t::ST778
 Memory memory(EEPROM_ADDRESS, i2c0);
 INA219 ina219(INA219_ADDRESS, i2c0);
 Registers registers;
-class PD_UFP_log_c PD_UFP(PD_LOG_LEVEL_VERBOSE);
+PD_UFP_log_c PD_UFP(PD_LOG_LEVEL_VERBOSE);
 
 /**
  * @brief Initialize the I2C busses
@@ -318,7 +318,8 @@ float toAmp(int amp, bool pps = false);
 
 void prepPSU()
 {
-	PD_UFP.init_PPS(PPS_V(5.0), PPS_A(1.0), PD_POWER_OPTION_MAX_5V);
+	PD_UFP.clock_prescale_set(4);
+	PD_UFP.init_PPS(PPS_V(15.0), PPS_A(1.0), PD_POWER_OPTION_MAX_POWER);
 
 	unsigned long time = time_us_32();
 	while(time_us_32() - time < 1000)
@@ -479,7 +480,7 @@ int main()
 	ina219.setData();
 	ina219.getData(true);
 
-	//PD_UFP.init_PPS(PPS_V(4.2), PPS_A(6.9));
+	//PD_UFP.init_PPS(PPS_V(4.20), PPS_A(0.69));
 	prepPSU();
 	float volt = 20;
 	float current = 1;
@@ -489,25 +490,22 @@ int main()
 	Point cursor = Point(0, 10);
 	Point center = display.getCenter();
 
-	// timer for avoiding too fast screen updates
-	unsigned long lastUpdate = 0;
-	// should be updated every 10fps
-	unsigned long updateInterval = 100000;
+	// timer for the framerate calculation
 	unsigned long timer = 0, lastTimer = 0;
 	double framerate = 0;
 
 	// run the main loop
 	while(1)
 	{
-		lastTimer = time_us_32();
 		ina219.getData();	
 		processUSBData();
 		RegisterHandler();
 		buttonHandler();
-		request(&volt, &current, ppsReady);
+		//request(&volt, &current, ppsReady);
 		PD_UFP.run();
 
-		if(buttonDown.isClicked())
+		// check if serial is ready
+		if(tud_cdc_connected())
 			PD_UFP.print_status();
 
 		// transfer the data from the INA219 to the registers for external access
@@ -516,15 +514,13 @@ int main()
 		registers.setProtected(Register_Address::Current, ina219.getCurrentRaw());
 		registers.setProtected(Register_Address::Power, ina219.getPowerRaw());
 
-		if(ina219.getCurrent() > currentLimit)
-			overcurrent = true;
-		else if (ina219.getCurrent() < (float)currentLimit * 0.8)
-			overcurrent = false;
-
 		// if the screen is not ready, we skip the drawing and continue to poll the sensor
 		if(!display.writeReady())
 			continue;
 
+		// start measuring the refresh rate, the reason we do this here is because we want to measure the time it takes to draw the screen
+		// if this is done earlier, the time it takes to poll the sensors and treat that data, can wrongly be included in the time it takes to draw the screen
+		lastTimer = time_us_32();
 		// draw the background
 		display.drawRotRectGradient(center, display.getWidth(), display.getHeight(), 10, Colors::OrangeRed, Colors::DarkYellow);
 		//display.fill(Colors::Derg);
@@ -584,7 +580,6 @@ int main()
 		display.writeBuffer();
 
 		// reset the timer
-		lastUpdate = time_us_32();
 		timer = time_us_32() - lastTimer;
 		framerate = 1000000.0 / timer;
 	}
