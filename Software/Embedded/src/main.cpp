@@ -498,7 +498,7 @@ int main()
 	request(&volt, &current, ppsReady);
 
 	// create points for important locations
-	Point cursor = Point(0, 10);
+	Point cursor = Point(10, 10);
 	Point center = picoGFX.getDisplay().getCenter();
 	picoGFX.getPrint().setColor(Colors::White);
 
@@ -535,7 +535,8 @@ int main()
 		lastTimer = time_us_32();
 		// draw the background
 		//picoGFX.getAdvancedGraphics().drawRotRectGradient(center, display.getWidth(), display.getHeight(), 10, Colors::OrangeRed, Colors::DarkYellow);
-		picoGFX.getDisplay().fill(Colors::Derg);
+		//picoGFX.getDisplay().fill(Colors::Derg);
+		picoGFX.getGraphics().drawBitmap(background_image, 320, 172);
 		picoGFX.getPrint().setCursor(cursor);
 		picoGFX.getPrint().setFont(&RobotoMono48);
 
@@ -559,10 +560,9 @@ int main()
 		picoGFX.getPrint().setColor(Colors::GreenYellow);
 		picoGFX.getPrint().setFont(&ComicSans24);
 		picoGFX.getPrint().print(framerate);
-		picoGFX.getPrint().setCursor({0, 10});
+		picoGFX.getPrint().setCursor(cursor + Point(0, RobotoMono48.height));
 		picoGFX.getPrint().setFont(&RobotoMono48);
 		picoGFX.getPrint().setColor(Colors::White);
-		picoGFX.getPrint().println(" ");
 
 		// draw the voltage
 		int volt = ina219.getBusVoltageRaw() * 100 * BUS_VOLTAGE_LSB_VALUE;
@@ -577,7 +577,8 @@ int main()
 		// draw additional zeros if needed
 		if(volt_fraction == 0)
 			picoGFX.getPrint().print("0");
-		picoGFX.getPrint().println("V");
+		picoGFX.getPrint().print("V");
+		picoGFX.getPrint().setCursor(cursor + Point(0, RobotoMono48.height * 2));
 
 		// draw the power
 		int power = (ina219.getPowerRaw() * 2000) * CURRENT_RESOLUTION;

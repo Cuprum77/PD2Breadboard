@@ -109,6 +109,7 @@
 #include "PicoGFX.hpp"
 #include "RobotoMono48.h"
 #include "ComicSans24.h"
+#include "bg.h"
 
 /***
  *      ____  _         _____           _    ____        _        
