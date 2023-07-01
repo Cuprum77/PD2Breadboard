@@ -37,8 +37,6 @@ Display_Pins displayPins = {
 
 Display_Params displayParams = {
 #ifndef __INTELLISENSE__
-	.interface = SPI_Interface_t::PIO_HW,
-	.type = display_type_t::ST7789,
 	.height = DISP_HEIGHT,
 	.width = DISP_WIDTH,
 	.columnOffset1 = DISP_OFFSET_X0,
@@ -49,20 +47,11 @@ Display_Params displayParams = {
 #endif
 };
 
-// Create the display object
-HardwareSPI spi(displayPins, displayParams);
-Display display(&spi, &displayPins, &displayParams);
-// Create the GFX objects
-Print print(display.getFrameBuffer(), displayParams);
-Graphics graphics(display.getFrameBuffer(), displayParams);
-AdvancedGraphics advancedGraphics(display.getFrameBuffer(), displayParams);
-// Create the PicoGFX object
-PicoGFX picoGFX(&display, &print, &graphics, &advancedGraphics);
-
 // Create the objects
 Button buttonUp(BUTTON_UP);
 Button buttonMenu(BUTTON_MENU);
 Button buttonDown(BUTTON_DOWN);
+AdvancedGraphics display(spi0, displayPins, displayParams, display_type_t::ST7789, true, SPI_Interface_t::PIO_HW);
 Memory memory(EEPROM_ADDRESS, i2c0);
 INA219 ina219(INA219_ADDRESS, i2c0);
 Registers registers;
@@ -499,8 +488,7 @@ int main()
 
 	// create points for important locations
 	Point cursor = Point(0, 10);
-	Point center = picoGFX.getDisplay().getCenter();
-	picoGFX.getPrint().setColor(Colors::White);
+	Point center = display.getCenter();
 
 	// timer for the framerate calculation
 	unsigned long timer = 0, lastTimer = 0;
@@ -527,17 +515,16 @@ int main()
 		registers.setProtected(Register_Address::Power, ina219.getPowerRaw());
 
 		// if the screen is not ready, we skip the drawing and continue to poll the sensor
-		if(!picoGFX.getDisplay().writeReady())
+		if(!display.writeReady())
 			continue;
 
 		// start measuring the refresh rate, the reason we do this here is because we want to measure the time it takes to draw the screen
 		// if this is done earlier, the time it takes to poll the sensors and treat that data, can wrongly be included in the time it takes to draw the screen
 		lastTimer = time_us_32();
 		// draw the background
-		//picoGFX.getAdvancedGraphics().drawRotRectGradient(center, display.getWidth(), display.getHeight(), 10, Colors::OrangeRed, Colors::DarkYellow);
-		picoGFX.getDisplay().fill(Colors::Derg);
-		picoGFX.getPrint().setCursor(cursor);
-		picoGFX.getPrint().setFont(&RobotoMono48);
+		//display.drawRotRectGradient(center, display.getWidth(), display.getHeight(), 10, Colors::OrangeRed, Colors::DarkYellow);
+		display.fill(Colors::Derg);
+		display.setCursor(cursor);
 
 		// draw the current
 		int current = (ina219.getCurrentRaw() * 100) * CURRENT_RESOLUTION;
@@ -545,57 +532,52 @@ int main()
 		current = current > 5000 ? 0 : current;
 		int current_int = current / 100;
 		int current_fraction = current_int > 10 ? (current % 10) : (current % 100);
-		picoGFX.getPrint().print(current_int);
-		picoGFX.getPrint().print(".");
+		display.print(current_int, 2);
+		display.print(".", 2);
 		// if the current is less than 10, we need to draw a zero
 		if(current_int < 10 && current_fraction != 0)
-			picoGFX.getPrint().print("0");
-		picoGFX.getPrint().print(current_fraction);
+			display.print("0", 2);
+		display.print(current_fraction, 2);
 		// draw additional zeros if needed
 		if(current_fraction == 0)
-			picoGFX.getPrint().print("0");
-		picoGFX.getPrint().print("A");
-		picoGFX.getPrint().print(" ");
-		picoGFX.getPrint().setColor(Colors::GreenYellow);
-		picoGFX.getPrint().setFont(&ComicSans24);
-		picoGFX.getPrint().print(framerate);
-		picoGFX.getPrint().setCursor({0, 10});
-		picoGFX.getPrint().setFont(&RobotoMono48);
-		picoGFX.getPrint().setColor(Colors::White);
-		picoGFX.getPrint().println(" ");
+			display.print("0", 2);
+		display.print("A", 2);
+		display.print(" ", 2);
+		display.print(framerate, Colors::GreenYellow, 2, 1);
+		display.println(" ", 2);
 
 		// draw the voltage
 		int volt = ina219.getBusVoltageRaw() * 100 * BUS_VOLTAGE_LSB_VALUE;
 		int volt_int = volt / 100;
 		int volt_fraction = volt_int > 10 ? (volt % 10) : (volt % 100);
-		picoGFX.getPrint().print(volt_int);
-		picoGFX.getPrint().print(".");
+		display.print(volt_int, 2);
+		display.print(".", 2);
 		// if the current is less than 10, we need to draw a zero
 		if(volt_fraction < 10 && volt_fraction != 0)
-			picoGFX.getPrint().print("0");
-		picoGFX.getPrint().print(volt_fraction);
+			display.print("0", 2);
+		display.print(volt_fraction, 2);
 		// draw additional zeros if needed
 		if(volt_fraction == 0)
-			picoGFX.getPrint().print("0");
-		picoGFX.getPrint().println("V");
+			display.print("0", 2);
+		display.println("V", 2);
 
 		// draw the power
 		int power = (ina219.getPowerRaw() * 2000) * CURRENT_RESOLUTION;
 		int power_int = power / 100;
 		int power_fraction = power_int > 10 ? (power % 10) : (power % 100);
-		picoGFX.getPrint().print(power_int);
-		picoGFX.getPrint().print(".");
+		display.print(power_int, 2);
+		display.print(".", 2);
 		// if the current is less than 10, we need to draw a zero
 		if(power_fraction < 10 && power_fraction != 0)
-			picoGFX.getPrint().print("0");
-		picoGFX.getPrint().print(power_fraction);
+			display.print("0", 2);
+		display.print(power_fraction, 2);
 		// draw additional zeros if needed
 		if(power_fraction == 0)
-			picoGFX.getPrint().print("0");
-		picoGFX.getPrint().print("W\n");
+			display.print("0", 2);
+		display.print("W\n", 2);
 
 		// output the data to the display
-		picoGFX.getDisplay().update();
+		display.writeBuffer();
 
 		// reset the timer
 		timer = time_us_32() - lastTimer;

@@ -101,14 +101,14 @@
 #include "tusb.h"
 
 #include "Button.hpp"
-#include "AdvancedGraphics.hpp"
 #include "INA219.hpp"
 #include "Memory.hpp"
 #include "version.h"
 #include "Registers.hpp"
 #include "PD_UFP.h"
-
-
+#include "PicoGFX.hpp"
+#include "RobotoMono48.h"
+#include "ComicSans24.h"
 
 /***
  *      ____  _         _____           _    ____        _        

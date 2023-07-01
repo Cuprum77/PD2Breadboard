@@ -9,7 +9,8 @@ product_id = "000A"
 baudrate = 9600
 timeout = 1
 # reset message
-reset_message = "reboot_to_bootloader"
+reset_start = 0x01
+reset_message = 0x06
 
 
 # Thanks https://github.com/diminDDL for assisting in development and testing on Linux
@@ -101,8 +102,8 @@ def Reset_Device():
             print(f"Could not connect to the device at {port}, please disconnect any program that is using the device and try again")
             exit()
 
-        # send the reset message
-        ser.write(reset_message.encode())
+        # send the reset message as a byte
+        ser.write(bytes([reset_start, reset_message]))
         # close the connection
         ser.close()
 
