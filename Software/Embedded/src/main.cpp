@@ -498,7 +498,7 @@ int main()
 	request(&volt, &current, ppsReady);
 
 	// create points for important locations
-	Point cursor = Point(10, 10);
+	Point cursor = Point(0, 0);
 	Point center = picoGFX.getDisplay().getCenter();
 	picoGFX.getPrint().setColor(Colors::White);
 
@@ -534,13 +534,17 @@ int main()
 		// if this is done earlier, the time it takes to poll the sensors and treat that data, can wrongly be included in the time it takes to draw the screen
 		lastTimer = time_us_32();
 		// draw the background
-		//picoGFX.getAdvancedGraphics().drawRotRectGradient(center, display.getWidth(), display.getHeight(), 10, Colors::OrangeRed, Colors::DarkYellow);
+		picoGFX.getAdvancedGraphics().drawRotRectGradient(center, display.getWidth(), display.getHeight(), 10, Colors::OrangeRed, Colors::DarkYellow);
+		//picoGFX.getAdvancedGraphics().fillGradient(Colors::Derg, Colors::Pink, {50,50}, {320-50, 172-50});
 		//picoGFX.getDisplay().fill(Colors::Derg);
-		picoGFX.getGraphics().drawBitmap(background_image, 320, 172);
+		//picoGFX.getGraphics().drawBitmap(background_image, 320, 172);
+
 		picoGFX.getPrint().setCursor(cursor);
 		picoGFX.getPrint().setFont(&RobotoMono48);
+		picoGFX.getPrint().setColor(Colors::White);
 
 		// draw the current
+		picoGFX.getPrint().moveCursor({10,0});
 		int current = (ina219.getCurrentRaw() * 100) * CURRENT_RESOLUTION;
 		// it overflows if the current is zero for some reason, so we manually set it to zero if that happens
 		current = current > 5000 ? 0 : current;
@@ -555,16 +559,10 @@ int main()
 		// draw additional zeros if needed
 		if(current_fraction == 0)
 			picoGFX.getPrint().print("0");
-		picoGFX.getPrint().print("A");
-		picoGFX.getPrint().print(" ");
-		picoGFX.getPrint().setColor(Colors::GreenYellow);
-		picoGFX.getPrint().setFont(&ComicSans24);
-		picoGFX.getPrint().print(framerate);
-		picoGFX.getPrint().setCursor(cursor + Point(0, RobotoMono48.height));
-		picoGFX.getPrint().setFont(&RobotoMono48);
-		picoGFX.getPrint().setColor(Colors::White);
+		picoGFX.getPrint().println("A");
 
 		// draw the voltage
+		picoGFX.getPrint().moveCursor({10, 0});
 		int volt = ina219.getBusVoltageRaw() * 100 * BUS_VOLTAGE_LSB_VALUE;
 		int volt_int = volt / 100;
 		int volt_fraction = volt_int > 10 ? (volt % 10) : (volt % 100);
@@ -577,10 +575,10 @@ int main()
 		// draw additional zeros if needed
 		if(volt_fraction == 0)
 			picoGFX.getPrint().print("0");
-		picoGFX.getPrint().print("V");
-		picoGFX.getPrint().setCursor(cursor + Point(0, RobotoMono48.height * 2));
+		picoGFX.getPrint().println("V");
 
 		// draw the power
+		picoGFX.getPrint().moveCursor({10,0});
 		int power = (ina219.getPowerRaw() * 2000) * CURRENT_RESOLUTION;
 		int power_int = power / 100;
 		int power_fraction = power_int > 10 ? (power % 10) : (power % 100);
@@ -594,6 +592,12 @@ int main()
 		if(power_fraction == 0)
 			picoGFX.getPrint().print("0");
 		picoGFX.getPrint().print("W\n");
+
+		// draw the frame counter
+		picoGFX.getPrint().setCursor({230, 10});
+		picoGFX.getPrint().setColor(Colors::GreenYellow);
+		picoGFX.getPrint().setFont(&ComicSans24);
+		picoGFX.getPrint().print(framerate);
 
 		// output the data to the display
 		picoGFX.getDisplay().update();
