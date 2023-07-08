@@ -37,7 +37,7 @@ Display_Pins displayPins = {
 
 Display_Params displayParams = {
 #ifndef __INTELLISENSE__
-	.interface = SPI_Interface_t::PIO_HW,
+	.hw_interface = SPI_Interface_t::PIO_HW,
 	.type = display_type_t::ST7789,
 	.height = DISP_HEIGHT,
 	.width = DISP_WIDTH,
@@ -55,9 +55,9 @@ Display display(&spi, &displayPins, &displayParams);
 // Create the GFX objects
 Print print(display.getFrameBuffer(), displayParams);
 Graphics graphics(display.getFrameBuffer(), displayParams);
-AdvancedGraphics advancedGraphics(display.getFrameBuffer(), displayParams);
+Gradients gradients(display.getFrameBuffer(), displayParams);
 // Create the PicoGFX object
-PicoGFX picoGFX(&display, &print, &graphics, &advancedGraphics);
+PicoGFX picoGFX(&display, &print, &graphics, &gradients);
 
 // Create the objects
 Button buttonUp(BUTTON_UP);
@@ -471,6 +471,7 @@ void request(float* volt, float* current, bool pps)
  * @brief Main function
  * @note This runs on the core 0
 */
+
 int main()
 {
 	// setup the microcontroller
@@ -503,8 +504,9 @@ int main()
 	picoGFX.getPrint().setColor(Colors::White);
 
 	// timer for the framerate calculation
-	unsigned long timer = 0, lastTimer = 0;
-	double framerate = 0;
+	int framecounter = 0;
+	int frames = 0;
+	unsigned long timer = 0;
 
 	// run the main loop
 	while(1)
@@ -530,12 +532,9 @@ int main()
 		if(!picoGFX.getDisplay().writeReady())
 			continue;
 
-		// start measuring the refresh rate, the reason we do this here is because we want to measure the time it takes to draw the screen
-		// if this is done earlier, the time it takes to poll the sensors and treat that data, can wrongly be included in the time it takes to draw the screen
-		lastTimer = time_us_32();
 		// draw the background
-		picoGFX.getAdvancedGraphics().drawRotRectGradient(center, display.getWidth(), display.getHeight(), 10, Colors::OrangeRed, Colors::DarkYellow);
-		//picoGFX.getAdvancedGraphics().fillGradient(Colors::Derg, Colors::Pink, {50,50}, {320-50, 172-50});
+		picoGFX.getGradients().drawRotRectGradient(center, display.getWidth(), display.getHeight(), 10, Colors::OrangeRed, Colors::DarkYellow);
+		//picoGFX.getGradients().fillGradient(Colors::Derg, Colors::Pink, {50,50}, {320-50, 172-50});
 		//picoGFX.getDisplay().fill(Colors::Derg);
 		//picoGFX.getGraphics().drawBitmap(background_image, 320, 172);
 
@@ -597,13 +596,19 @@ int main()
 		picoGFX.getPrint().setCursor({230, 10});
 		picoGFX.getPrint().setColor(Colors::GreenYellow);
 		picoGFX.getPrint().setFont(&ComicSans24);
-		picoGFX.getPrint().print(framerate);
+		picoGFX.getPrint().print(frames);
+		picoGFX.getPrint().print(" fps");
 
 		// output the data to the display
 		picoGFX.getDisplay().update();
 
-		// reset the timer
-		timer = time_us_32() - lastTimer;
-		framerate = 1000000.0 / timer;
+		// Update the frame counter
+		framecounter++;
+		if((time_us_64() - timer) >= 1000000)
+		{
+			timer = time_us_64();
+			frames = framecounter;
+			framecounter = 0;
+		}
 	}
 }

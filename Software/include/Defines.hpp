@@ -95,10 +95,12 @@
 #include "pico/stdlib.h"
 #include "pico/bootrom.h"
 #include "pico/binary_info.h"
+#include "pico/time.h"
+#include "tusb.h"
+
 #include "hardware/uart.h"
 #include "hardware/i2c.h"
 #include "hardware/watchdog.h"
-#include "tusb.h"
 
 #include "Button.hpp"
 #include "INA219.hpp"
@@ -109,7 +111,9 @@
 #include "PicoGFX.hpp"
 #include "RobotoMono48.h"
 #include "ComicSans24.h"
+#include "ComicSans48.h"
 #include "bg.h"
+#include "test.h"
 
 /***
  *      ____  _         _____           _    ____        _        
