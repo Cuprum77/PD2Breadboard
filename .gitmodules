@@ -1,3 +1,3 @@
-[submodule "Software/Embedded/lib/PicoGFX"]
-	path = Software/Embedded/lib/PicoGFX
+[submodule "Software/lib/PicoGFX"]
+	path = Software/lib/PicoGFX
 	url = https://github.com/Cuprum77/PicoGFX
