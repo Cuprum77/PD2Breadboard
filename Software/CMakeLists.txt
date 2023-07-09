@@ -7,8 +7,8 @@ include($ENV{PICO_SDK_PATH}/tools/CMakeLists.txt)
 
 # Set name of project (as PROJECT_NAME) and C/C   standards
 project(USB-PD_Power_Supply C CXX)
-set(CMAKE_C_STANDARD 11)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_C_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
 # Creates a pico-sdk subdirectory in our project for the libraries
 pico_sdk_init()

@@ -101,6 +101,8 @@
 #include "hardware/uart.h"
 #include "hardware/i2c.h"
 #include "hardware/watchdog.h"
+#include "hardware/clocks.h"
+#include "hardware/vreg.h"
 
 #include "Button.hpp"
 #include "INA219.hpp"
