@@ -37,6 +37,8 @@ Display_Pins displayPins = {
 
 Display_Params displayParams = {
 #ifndef __INTELLISENSE__
+	.hw_interface = SPI_Interface_t::PIO_HW,
+	.type = display_type_t::ST7789,
 	.height = DISP_HEIGHT,
 	.width = DISP_WIDTH,
 	.columnOffset1 = DISP_OFFSET_X0,
@@ -47,11 +49,20 @@ Display_Params displayParams = {
 #endif
 };
 
+// Create the display object
+HardwareSPI spi(displayPins, displayParams);
+Display display(&spi, &displayPins, &displayParams);
+// Create the GFX objects
+Print print(display.getFrameBuffer(), displayParams);
+Graphics graphics(display.getFrameBuffer(), displayParams);
+Gradients gradients(display.getFrameBuffer(), displayParams);
+// Create the PicoGFX object
+PicoGFX picoGFX(&display, &print, &graphics, &gradients);
+
 // Create the objects
 Button buttonUp(BUTTON_UP);
 Button buttonMenu(BUTTON_MENU);
 Button buttonDown(BUTTON_DOWN);
-AdvancedGraphics display(spi0, displayPins, displayParams, display_type_t::ST7789, true, SPI_Interface_t::PIO_HW);
 Memory memory(EEPROM_ADDRESS, i2c0);
 INA219 ina219(INA219_ADDRESS, i2c0);
 Registers registers;
@@ -460,6 +471,7 @@ void request(float* volt, float* current, bool pps)
  * @brief Main function
  * @note This runs on the core 0
 */
+
 int main()
 {
 	// setup the microcontroller
@@ -487,12 +499,14 @@ int main()
 	request(&volt, &current, ppsReady);
 
 	// create points for important locations
-	Point cursor = Point(0, 10);
-	Point center = display.getCenter();
+	Point cursor = Point(0, 0);
+	Point center = picoGFX.getDisplay().getCenter();
+	picoGFX.getPrint().setColor(Colors::White);
 
 	// timer for the framerate calculation
-	unsigned long timer = 0, lastTimer = 0;
-	double framerate = 0;
+	int framecounter = 0;
+	int frames = 0;
+	unsigned long timer = 0;
 
 	// run the main loop
 	while(1)
@@ -515,72 +529,86 @@ int main()
 		registers.setProtected(Register_Address::Power, ina219.getPowerRaw());
 
 		// if the screen is not ready, we skip the drawing and continue to poll the sensor
-		if(!display.writeReady())
+		if(!picoGFX.getDisplay().writeReady())
 			continue;
 
-		// start measuring the refresh rate, the reason we do this here is because we want to measure the time it takes to draw the screen
-		// if this is done earlier, the time it takes to poll the sensors and treat that data, can wrongly be included in the time it takes to draw the screen
-		lastTimer = time_us_32();
 		// draw the background
-		//display.drawRotRectGradient(center, display.getWidth(), display.getHeight(), 10, Colors::OrangeRed, Colors::DarkYellow);
-		display.fill(Colors::Derg);
-		display.setCursor(cursor);
+		picoGFX.getGradients().drawRotRectGradient(center, display.getWidth(), display.getHeight(), 10, Colors::OrangeRed, Colors::DarkYellow);
+		//picoGFX.getGradients().fillGradient(Colors::Derg, Colors::Pink, {50,50}, {320-50, 172-50});
+		//picoGFX.getDisplay().fill(Colors::Derg);
+		//picoGFX.getGraphics().drawBitmap(background_image, 320, 172);
+
+		picoGFX.getPrint().setCursor(cursor);
+		picoGFX.getPrint().setFont(&RobotoMono48);
+		picoGFX.getPrint().setColor(Colors::White);
 
 		// draw the current
+		picoGFX.getPrint().moveCursor({10,0});
 		int current = (ina219.getCurrentRaw() * 100) * CURRENT_RESOLUTION;
 		// it overflows if the current is zero for some reason, so we manually set it to zero if that happens
 		current = current > 5000 ? 0 : current;
 		int current_int = current / 100;
 		int current_fraction = current_int > 10 ? (current % 10) : (current % 100);
-		display.print(current_int, 2);
-		display.print(".", 2);
+		picoGFX.getPrint().print(current_int);
+		picoGFX.getPrint().print(".");
 		// if the current is less than 10, we need to draw a zero
 		if(current_int < 10 && current_fraction != 0)
-			display.print("0", 2);
-		display.print(current_fraction, 2);
+			picoGFX.getPrint().print("0");
+		picoGFX.getPrint().print(current_fraction);
 		// draw additional zeros if needed
 		if(current_fraction == 0)
-			display.print("0", 2);
-		display.print("A", 2);
-		display.print(" ", 2);
-		display.print(framerate, Colors::GreenYellow, 2, 1);
-		display.println(" ", 2);
+			picoGFX.getPrint().print("0");
+		picoGFX.getPrint().println("A");
 
 		// draw the voltage
+		picoGFX.getPrint().moveCursor({10, 0});
 		int volt = ina219.getBusVoltageRaw() * 100 * BUS_VOLTAGE_LSB_VALUE;
 		int volt_int = volt / 100;
 		int volt_fraction = volt_int > 10 ? (volt % 10) : (volt % 100);
-		display.print(volt_int, 2);
-		display.print(".", 2);
+		picoGFX.getPrint().print(volt_int);
+		picoGFX.getPrint().print(".");
 		// if the current is less than 10, we need to draw a zero
 		if(volt_fraction < 10 && volt_fraction != 0)
-			display.print("0", 2);
-		display.print(volt_fraction, 2);
+			picoGFX.getPrint().print("0");
+		picoGFX.getPrint().print(volt_fraction);
 		// draw additional zeros if needed
 		if(volt_fraction == 0)
-			display.print("0", 2);
-		display.println("V", 2);
+			picoGFX.getPrint().print("0");
+		picoGFX.getPrint().println("V");
 
 		// draw the power
+		picoGFX.getPrint().moveCursor({10,0});
 		int power = (ina219.getPowerRaw() * 2000) * CURRENT_RESOLUTION;
 		int power_int = power / 100;
 		int power_fraction = power_int > 10 ? (power % 10) : (power % 100);
-		display.print(power_int, 2);
-		display.print(".", 2);
+		picoGFX.getPrint().print(power_int);
+		picoGFX.getPrint().print(".");
 		// if the current is less than 10, we need to draw a zero
 		if(power_fraction < 10 && power_fraction != 0)
-			display.print("0", 2);
-		display.print(power_fraction, 2);
+			picoGFX.getPrint().print("0");
+		picoGFX.getPrint().print(power_fraction);
 		// draw additional zeros if needed
 		if(power_fraction == 0)
-			display.print("0", 2);
-		display.print("W\n", 2);
+			picoGFX.getPrint().print("0");
+		picoGFX.getPrint().print("W\n");
+
+		// draw the frame counter
+		picoGFX.getPrint().setCursor({230, 10});
+		picoGFX.getPrint().setColor(Colors::GreenYellow);
+		picoGFX.getPrint().setFont(&ComicSans24);
+		picoGFX.getPrint().print(frames);
+		picoGFX.getPrint().print(" fps");
 
 		// output the data to the display
-		display.writeBuffer();
+		picoGFX.getDisplay().update();
 
-		// reset the timer
-		timer = time_us_32() - lastTimer;
-		framerate = 1000000.0 / timer;
+		// Update the frame counter
+		framecounter++;
+		if((time_us_64() - timer) >= 1000000)
+		{
+			timer = time_us_64();
+			frames = framecounter;
+			framecounter = 0;
+		}
 	}
 }
