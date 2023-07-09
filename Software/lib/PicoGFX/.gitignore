@@ -1,6 +1,0 @@
-# VSCode
-.vscode/
-build/
-.vscode/
-*.uf2
-*.code-workspace
