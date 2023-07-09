@@ -123,6 +123,11 @@ link_directories(${CMAKE_SOURCE_DIR}/lib/INA219)
 link_directories(${CMAKE_SOURCE_DIR}/lib/Memory)
 link_directories(${CMAKE_SOURCE_DIR}/lib/Registers)
 
+# set SPI clock slower than CPU clock so that it works
+pico_define_boot_stage2(slower_boot2 ${PICO_DEFAULT_BOOT_STAGE2_FILE})
+target_compile_definitions(slower_boot2 PRIVATE PICO_FLASH_SPI_CLKDIV=4)
+pico_set_boot_stage2(${PROJECT_NAME} slower_boot2)
+
 # Create map/bin/hex/uf2 files
 pico_add_extra_outputs(${PROJECT_NAME})
 
