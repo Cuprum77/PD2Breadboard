@@ -7,8 +7,8 @@ include($ENV{PICO_SDK_PATH}/tools/CMakeLists.txt)
 
 # Set name of project (as PROJECT_NAME) and C/C   standards
 project(USB-PD_Power_Supply C CXX)
-set(CMAKE_C_STANDARD 17)
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 
 # Creates a pico-sdk subdirectory in our project for the libraries
 pico_sdk_init()
@@ -122,11 +122,6 @@ link_directories(${CMAKE_SOURCE_DIR}/lib/USB_PD)
 link_directories(${CMAKE_SOURCE_DIR}/lib/INA219)
 link_directories(${CMAKE_SOURCE_DIR}/lib/Memory)
 link_directories(${CMAKE_SOURCE_DIR}/lib/Registers)
-
-# set SPI clock slower than CPU clock so that it works
-pico_define_boot_stage2(slower_boot2 ${PICO_DEFAULT_BOOT_STAGE2_FILE})
-target_compile_definitions(slower_boot2 PRIVATE PICO_FLASH_SPI_CLKDIV=4)
-pico_set_boot_stage2(${PROJECT_NAME} slower_boot2)
 
 # Create map/bin/hex/uf2 files
 pico_add_extra_outputs(${PROJECT_NAME})

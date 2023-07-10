@@ -23,21 +23,21 @@ PD_power_option_t PDList[] = {
 };
 
 // set the display parameters
-// the ifdefs are used to prevent the intellisense from complaining about the variables not being defined
 Display_Pins displayPins = {
-#ifndef __INTELLISENSE__
 	.rst = DISP_PIN_RST,
 	.dc = DISP_PIN_DC,
 	.cs = DISP_PIN_CS,
 	.sda = DISP_PIN_MOSI,
 	.scl = DISP_PIN_SCK,
 	.bl = DISP_PIN_BL
-#endif
+};
+
+Hardware_Params hardwareParams = {
+	.hw_interface = SPI_Interface_t::SPI_HW,
+	.baudrate = 125000000,
 };
 
 Display_Params displayParams = {
-#ifndef __INTELLISENSE__
-	.hw_interface = SPI_Interface_t::PIO_HW,
 	.type = display_type_t::ST7789,
 	.height = DISP_HEIGHT,
 	.width = DISP_WIDTH,
@@ -46,18 +46,19 @@ Display_Params displayParams = {
 	.rowOffset1 = DISP_OFFSET_Y0,
 	.rowOffset2 = DISP_OFFSET_Y1,
 	.rotation = DISP_ROTATION
-#endif
 };
 
 // Create the display object
-HardwareSPI spi(displayPins, displayParams);
+HardwareSPI spi(displayPins, hardwareParams, displayParams);
 Display display(&spi, &displayPins, &displayParams);
 // Create the GFX objects
 Print print(display.getFrameBuffer(), displayParams);
 Graphics graphics(display.getFrameBuffer(), displayParams);
 Gradients gradients(display.getFrameBuffer(), displayParams);
+// Create the encoder/decoder object
+Encoder encoder;
 // Create the PicoGFX object
-PicoGFX picoGFX(&display, &print, &graphics, &gradients);
+PicoGFX picoGFX(&display, &print, &graphics, &gradients, &encoder);
 
 // Create the objects
 Button buttonUp(BUTTON_UP);
