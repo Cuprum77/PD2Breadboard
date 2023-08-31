@@ -1,4 +1,4 @@
-#include "include/Defines.hpp"
+#include "include/main.h"
 
 // set the variables to the default values in case we fail to retrieve the data from the EEPROM
 unsigned int currentNegotiated = Device_Target_Current_Default;
@@ -10,57 +10,39 @@ unsigned int backlightBrightness = Display_Brightness_Default;
 bool overcurrent = false;
 bool outputEnabled = false;
 
-// pps variables
-bool ppsReady = false;
-float maxCurrent = 0;
-float maxVoltage = 0;
-PD_power_option_t PDList[] = {
-	PD_POWER_OPTION_MAX_5V, 
-	PD_POWER_OPTION_MAX_9V, 
-	PD_POWER_OPTION_MAX_12V, 
-	PD_POWER_OPTION_MAX_15V, 
-	PD_POWER_OPTION_MAX_20V
-};
-
 // set the display parameters
-// set the display parameters
-Display_Pins displayPins = {
+display_spi_config_t spi_config {
 	.rst = DISP_PIN_RST,
 	.dc = DISP_PIN_DC,
 	.cs = DISP_PIN_CS,
 	.sda = DISP_PIN_MOSI,
 	.scl = DISP_PIN_SCK,
-	.bl = DISP_PIN_BL
-};
-
-Hardware_Params hardwareParams = {
-	.hw_interface = SPI_Interface_t::SPI_HW,
+	.pio = false,
 	.spi_instance = spi0,
 	.baudrate = 125000000,
 };
 
-Display_Params displayParams = {
-	.type = display_type_t::ST7789,
+display_config_t config = {
+	.backlightPin = DISP_PIN_BL,
 	.height = DISP_HEIGHT,
 	.width = DISP_WIDTH,
 	.columnOffset1 = DISP_OFFSET_X0,
 	.columnOffset2 = DISP_OFFSET_X1,
 	.rowOffset1 = DISP_OFFSET_Y0,
 	.rowOffset2 = DISP_OFFSET_Y1,
-	.rotation = DISP_ROTATION
+	.rotation = DISP_ROTATION,
+	.spi = spi_config
 };
 
 // Create the display object
-HardwareSPI spi(displayPins, hardwareParams, displayParams);
-Display display(&spi, &displayPins, &displayParams);
+Driver spi(&config);
+ST7789 display(&spi, &config);
 // Create the GFX objects
-Print print(display.getFrameBuffer(), displayParams);
-Graphics graphics(display.getFrameBuffer(), displayParams);
-Gradients gradients(display.getFrameBuffer(), displayParams);
-// Create the encoder/decoder object
-Encoder encoder;
+Print print(display.getFrameBuffer(), &config);
+Graphics graphics(display.getFrameBuffer(), &config);
+Gradients gradients(display.getFrameBuffer(), &config);
 // Create the PicoGFX object
-PicoGFX picoGFX(&display, &print, &graphics, &gradients, &encoder);
+PicoGFX picoGFX(&print, &graphics, &gradients, nullptr);
 
 // Create the objects
 Button buttonUp(BUTTON_UP);
@@ -69,7 +51,6 @@ Button buttonDown(BUTTON_DOWN);
 Memory memory(EEPROM_ADDRESS, i2c0);
 INA219 ina219(INA219_ADDRESS, i2c0);
 Registers registers;
-PD_UFP_log_c PD_UFP(PD_LOG_LEVEL_VERBOSE);
 
 /**
  * @brief Initialize the I2C busses
@@ -199,7 +180,7 @@ void RegisterHandler(bool all = false)
 			// reset the device into bootloader mode
 			// the intellisense doesnt like this function so we have to disable it until we build
 #ifndef __INTELLISENSE__
-			multicore_reset_core1();
+			//multicore_reset_core1();
 			reset_usb_boot(0, 0);
 			while(1);
 #endif			
@@ -327,154 +308,12 @@ void buttonHandler()
 	buttonDown.update();
 }
 
-float toVolt(int volt, bool pps = false);
-float toAmp(int amp, bool pps = false);
-
-void prepPSU()
-{
-	PD_UFP.clock_prescale_set(4);
-	PD_UFP.init_PPS(PPS_V(15.0), PPS_A(1.0), PD_POWER_OPTION_MAX_POWER);
-
-	unsigned long time = time_us_32();
-	while(time_us_32() - time < 1000)
-	{
-		PD_UFP.run();
-		if(PD_UFP.is_PPS_ready())
-		{
-			ppsReady = true;
-			break;
-		}
-	}
-
-	if(ppsReady)
-	{
-		// check current
-		for(int i = 0; i < PPS_A(5.0); i += PPS_A(0.05))
-		{
-			if(PD_UFP.set_PPS(PPS_V(5.0), i))
-			{
-				while(PD_UFP.is_ps_transition())
-					PD_UFP.run();
-				
-				if(PD_UFP.is_PPS_ready())
-					maxCurrent = toAmp(PD_UFP.get_current(), ppsReady);
-			}
-		}
-
-		// check voltage
-		for(int i = PPS_V(3.3); i <= PPS_V(21.0); i += PPS_V(1.0))
-		{
-			if(PD_UFP.set_PPS(i, PPS_A(maxCurrent)))
-			{
-				while(PD_UFP.is_ps_transition())
-					PD_UFP.run();
-				
-				if(PD_UFP.is_PPS_ready())
-					maxVoltage = toVolt(PD_UFP.get_voltage(), ppsReady);
-			}
-		}
-	}
-	else
-	{
-		// check voltage
-		PD_UFP.set_power_option(PD_POWER_OPTION_MAX_VOLTAGE);
-		while(PD_UFP.is_ps_transition())
-			PD_UFP.run();
-
-		maxVoltage = toVolt(PD_UFP.get_voltage(), ppsReady);
-
-		// check current
-		PD_UFP.set_power_option(PD_POWER_OPTION_MAX_CURRENT);
-		while(PD_UFP.is_ps_transition())
-			PD_UFP.run();
-
-		maxCurrent = toAmp(PD_UFP.get_current(), ppsReady);
-	}
-}
-
-// convert the voltage to the correct values
-float toVolt(int volt, bool pps)
-{
-	float result = 0.0;
-
-	if(pps)
-	{
-		result = (volt - 0.01) / 50.0;
-		result = result < 0 ? 0.0 : result;
-	}
-	else
-	{
-		result = (volt - 0.01) / 20.0;
-		result = result < 0 ? 0.0 : result;
-	}
-	
-	return result;
-}
-
-// convert the current to the correct values
-float toAmp(int amp, bool pps)
-{
-	float result = 0.0;
-
-	if(pps)
-	{
-		result = (amp - 0.01) / 20.0;
-		result = result < 0 ? 0.0 : result;
-	}
-	else
-	{
-		result = (amp - 0.01) / 100.0;
-		result = result < 0 ? 0.0 : result;
-	}
-
-	return result;
-}
-
-void request(float* volt, float* current, bool pps)
-{
-	// if the PPS is ready, request the voltage and current
-	if(pps)
-	{
-		if(*volt <= PPS_V(maxVoltage) && *current <= PPS_A(maxCurrent))
-		{
-			if(*volt < PPS_V(3.3))
-				*volt = PPS_V(3.3);
-			if(*current < PPS_A(0.01))
-				*current = PPS_A(0.01);
-
-			PD_UFP.set_PPS(*volt, *current);
-
-			while(PD_UFP.is_ps_transition())
-				PD_UFP.run();
-		}
-	}
-	else
-	{
-		// as we dont have PPS, the voltage is fixed to either 5, 9, 12, 15 or 20 volts and we need to find which one is the closest to the requested voltage
-		if(*volt <= 5)
-			*volt = 5;
-		else if(*volt <= 9)
-			*volt = 9;
-		else if(*volt <= 12)
-			*volt = 12;
-		else if(*volt <= 15)
-			*volt = 15;
-		else
-			*volt = 20;
-
-		PD_power_option_t option = PDList[(int)((*volt - 5) / 3)];
-		PD_UFP.set_power_option(option);
-
-		while(PD_UFP.is_ps_transition())
-			PD_UFP.run();
-	}
-}
+void getFormat(double value, char unit);
 
 /**
  * @brief Main function
  * @note This runs on the core 0
 */
-
 int main()
 {
 	// setup the microcontroller
@@ -482,6 +321,10 @@ int main()
 	initI2C();
 	initLEDs();
 	fetchDataFromEEPROM();
+
+	// Initialize the display
+	spi.init();
+	display.init();
 
 	// setup the ina219 current sensor
 	ina219.reset();
@@ -495,15 +338,9 @@ int main()
 	ina219.setData();
 	ina219.getData(true);
 
-	//PD_UFP.init_PPS(PPS_V(4.20), PPS_A(0.69));
-	prepPSU();
-	float volt = 20;
-	float current = 1;
-	request(&volt, &current, ppsReady);
-
 	// create points for important locations
 	Point cursor = Point(0, 0);
-	Point center = picoGFX.getDisplay().getCenter();
+	Point center = display.getCenter();
 	picoGFX.getPrint().setColor(Colors::White);
 
 	// timer for the framerate calculation
@@ -518,12 +355,6 @@ int main()
 		processUSBData();
 		RegisterHandler();
 		buttonHandler();
-		//request(&volt, &current, ppsReady);
-		PD_UFP.run();
-
-		// check if serial is ready
-		if(tud_cdc_connected())
-			PD_UFP.print_status();
 
 		// transfer the data from the INA219 to the registers for external access
 		registers.setProtected(Register_Address::Bus_Voltage, ina219.getBusVoltageRaw());
@@ -531,13 +362,8 @@ int main()
 		registers.setProtected(Register_Address::Current, ina219.getCurrentRaw());
 		registers.setProtected(Register_Address::Power, ina219.getPowerRaw());
 
-		// if the screen is not ready, we skip the drawing and continue to poll the sensor
-		if(!picoGFX.getDisplay().writeReady())
-			continue;
-
 		// draw the background
-		picoGFX.getGradients().drawRotRectGradient(center, display.getWidth(), display.getHeight(), 10, Colors::OrangeRed, Colors::DarkYellow);
-		//picoGFX.getGradients().fillGradient(Colors::Derg, Colors::Pink, {50,50}, {320-50, 172-50});
+		picoGFX.getGradients().drawRotCircleGradient(center, DISP_HEIGHT, 10, Colors::OrangeRed, Colors::DarkYellow);
 		//picoGFX.getDisplay().fill(Colors::Derg);
 		//picoGFX.getGraphics().drawBitmap(background_image, 320, 172);
 
@@ -545,73 +371,48 @@ int main()
 		picoGFX.getPrint().setFont(&RobotoMono48);
 		picoGFX.getPrint().setColor(Colors::White);
 
-		// draw the current
-		picoGFX.getPrint().moveCursor({10,0});
-		int current = (ina219.getCurrentRaw() * 100) * CURRENT_RESOLUTION;
-		// it overflows if the current is zero for some reason, so we manually set it to zero if that happens
-		current = current > 5000 ? 0 : current;
-		int current_int = current / 100;
-		int current_fraction = current_int > 10 ? (current % 10) : (current % 100);
-		picoGFX.getPrint().print(current_int);
-		picoGFX.getPrint().print(".");
-		// if the current is less than 10, we need to draw a zero
-		if(current_int < 10 && current_fraction != 0)
-			picoGFX.getPrint().print("0");
-		picoGFX.getPrint().print(current_fraction);
-		// draw additional zeros if needed
-		if(current_fraction == 0)
-			picoGFX.getPrint().print("0");
-		picoGFX.getPrint().println("A");
+		double voltage = ina219.getVoltage();
+		double current = ina219.getCurrent();
+		double power = ina219.getPower();
 
 		// draw the voltage
-		picoGFX.getPrint().moveCursor({10, 0});
-		int volt = ina219.getBusVoltageRaw() * 100 * BUS_VOLTAGE_LSB_VALUE;
-		int volt_int = volt / 100;
-		int volt_fraction = volt_int > 10 ? (volt % 10) : (volt % 100);
-		picoGFX.getPrint().print(volt_int);
-		picoGFX.getPrint().print(".");
-		// if the current is less than 10, we need to draw a zero
-		if(volt_fraction < 10 && volt_fraction != 0)
-			picoGFX.getPrint().print("0");
-		picoGFX.getPrint().print(volt_fraction);
-		// draw additional zeros if needed
-		if(volt_fraction == 0)
-			picoGFX.getPrint().print("0");
-		picoGFX.getPrint().println("V");
+		//picoGFX.getPrint().setCursor({0, 78});
+		getFormat(voltage, 'V');
+		picoGFX.getPrint().center(Alignment_t::HorizontalCenter);
+		picoGFX.getPrint().print();
+
+		// draw the current
+		getFormat(current, 'A');
+		picoGFX.getPrint().center(Alignment_t::HorizontalCenter);
+		picoGFX.getPrint().print();
 
 		// draw the power
-		picoGFX.getPrint().moveCursor({10,0});
-		int power = (ina219.getPowerRaw() * 2000) * CURRENT_RESOLUTION;
-		int power_int = power / 100;
-		int power_fraction = power_int > 10 ? (power % 10) : (power % 100);
-		picoGFX.getPrint().print(power_int);
-		picoGFX.getPrint().print(".");
-		// if the current is less than 10, we need to draw a zero
-		if(power_fraction < 10 && power_fraction != 0)
-			picoGFX.getPrint().print("0");
-		picoGFX.getPrint().print(power_fraction);
-		// draw additional zeros if needed
-		if(power_fraction == 0)
-			picoGFX.getPrint().print("0");
-		picoGFX.getPrint().print("W\n");
+		picoGFX.getPrint().moveCursor(0, 10);
+		getFormat(power, 'W');
+		picoGFX.getPrint().center(Alignment_t::HorizontalCenter);
+		picoGFX.getPrint().print();
 
 		// draw the frame counter
 		picoGFX.getPrint().setCursor({230, 10});
 		picoGFX.getPrint().setColor(Colors::GreenYellow);
-		picoGFX.getPrint().setFont(&ComicSans24);
-		picoGFX.getPrint().print(frames);
-		picoGFX.getPrint().print(" fps");
+		picoGFX.getPrint().setFont(&RobotoMono24);
+		picoGFX.getPrint().setString("%d fps", display.getFrameCounter());
+		picoGFX.getPrint().print();
 
 		// output the data to the display
-		picoGFX.getDisplay().update();
-
-		// Update the frame counter
-		framecounter++;
-		if((time_us_64() - timer) >= 1000000)
-		{
-			timer = time_us_64();
-			frames = framecounter;
-			framecounter = 0;
-		}
+		display.update(true);
 	}
+}
+
+void getFormat(double value, char unit)
+{
+	// At 10 and above, we remove the decimal point
+	if(value >= 10.0f)
+		picoGFX.getPrint().setString("%.0f%c\n", value, unit);
+	// At 1 and above, we keep one decimal point
+	else if(value >= 1.0f)
+		picoGFX.getPrint().setString("%.1f%c\n", value, unit);
+	// Else we convert to milli and keep no decimal
+	else
+		picoGFX.getPrint().setString("%.0fm%c\n", value * 1000, unit);
 }
