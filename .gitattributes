@@ -1,0 +1,2 @@
+# Remove files from the github linguist search
+*.html linguist-vendored
